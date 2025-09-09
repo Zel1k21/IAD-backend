@@ -1,0 +1,15 @@
+{{template "base_start" .}}
+
+<div class="page_stage">
+    <div class="page_stage__main">
+        {{with .stage}}
+        <img class="page_stage__image" src="{{ .ImageURL }}" alt="{{ .Title }}">
+        <div class="page_stage__content">
+            <h2 class="page_stage__title">{{ .Title }}</h2>
+            <p class="page_stage__description">{{ .Description }}</p>
+        </div>
+        {{end}}
+    </div>
+</div>
+
+{{template "base_end" .}}

@@ -12,18 +12,21 @@ import (
 func StartServer() {
 	log.Println("Starting server")
 
-	repository, err := repository.NewRepository()
+	stageRepo, err := repository.NewStageRepository()
 	if err != nil {
-		logrus.Error("error creating repository")
+		logrus.Error("inicialize stage repository error: ", err)
 	}
-	handler := handler.NewHandler(repository)
+
+	stageHandler := handler.NewStageHandler(stageRepo)
+	stagesHandler := handler.NewStagesHandler(stageRepo)
 
 	r := gin.Default()
-	r.LoadHTMLGlob("templates/*")
+
+	r.LoadHTMLGlob("./templates/**/*")
 	r.Static("/static", "./resources")
 
-	r.GET("/hello", handler.GetOrders)
-	r.GET("/order/:id", handler.GetOrder)
+	r.GET("/stage/:id", stageHandler.GetStageByID)
+	r.GET("/stages", stagesHandler.GetStages)
 
 	r.Run()
 	log.Println("server down")

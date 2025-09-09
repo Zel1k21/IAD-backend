@@ -1,0 +1,16 @@
+{{template "base_start" .}}
+
+<div class="page_stages">
+    <img class="page_stages__image" src="/static/img/factory.png">
+    <form class="page_stages_search" action="/stages" method="get">
+        {{template "text_input" .search}}
+        <button class button-primary page-stages__search-button type="submit">Найти</button>
+    </form>
+    <div class="page_stages__stages_cards">
+        {{range .stages}}
+        {{template "stage_card_vertical" .}}
+        {{end}}
+    </div>
+</div>
+
+{{template "base_end" .}}

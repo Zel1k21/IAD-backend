@@ -1,0 +1,24 @@
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4.5rem;
+    background-color: var(--backgroung-color);
+    box-shadow: 0 0.25rem 0.25rem 0 var(--black-text);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    padding: 0 3rem;
+    z-index: 100;
+}
+
+.navbar_logo{
+    cursor: pointer;
+}
+
+.navbar_title{
+    font-size: var(--big-font-size);
+    font-weight: 600;
+}

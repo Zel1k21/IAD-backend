@@ -1,0 +1,13 @@
+:root {
+    --black-text: #000000;
+    --backgroung-color: #ffffff;
+    --card-backgroung-color: #20C997, 15%;
+    --button-color: #20C997;
+    --font-family: "Font Awesome 6 Pro";
+    --product-header-font-size: 30px;
+    --big-font-size: 26px;
+    --medium-font-size: 20px;
+    --small-font-size: 15px;
+    --mask-text-oppacity: 30;
+    --cards-gap: 70;
+}
