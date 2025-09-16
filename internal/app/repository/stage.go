@@ -23,20 +23,38 @@ var stages = []Stage{
 	{
 		ID:          1,
 		Title:       "Добыча и подготовка сырья ",
-		ImageURL:    "/static/stages/1.jpg",
-		Description: "Stage 1 description",
+		ImageURL:    "http://localhost:9000/stageimages/extraction_stage.png",
+		Description: "Добыча природных ресурсов: металлов, нефти, древесины, сельхозсырья и т.д. Первичная переработка (очистка, сортировка, подготовка к производству).",
 	},
 	{
 		ID:          2,
 		Title:       "Переработка сырья",
-		ImageURL:    "/static/stages/2.jpg",
+		ImageURL:    "http://localhost:9000/stageimages/transformation_stage.png",
 		Description: "Stage 2 description",
 	},
 	{
 		ID:          3,
 		Title:       "Производство готовой продукции",
-		ImageURL:    "/static/stages/3.jpg",
+		ImageURL:    "http://localhost:9000/stageimages/production_stage.png",
 		Description: "Stage 3 description",
+	},
+	{
+		ID:          4,
+		Title:       "Транспортировка",
+		ImageURL:    "http://localhost:9000/stageimages/transportation_stage.png",
+		Description: "Stage 4 description",
+	},
+	{
+		ID:          5,
+		Title:       "Хранение и обслуживание ",
+		ImageURL:    "http://localhost:9000/stageimages/storage_stage.png",
+		Description: "Stage 5 description",
+	},
+	{
+		ID:          6,
+		Title:       "Утилизация",
+		ImageURL:    "http://localhost:9000/stageimages/recycling_stage.png",
+		Description: "Stage 6 description",
 	},
 }
 

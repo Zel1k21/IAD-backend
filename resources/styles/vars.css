@@ -1,13 +1,24 @@
 :root {
     --black-text: #000000;
-    --backgroung-color: #ffffff;
-    --card-backgroung-color: #20C997, 15%;
+    --background-color: #ffffff;
+    --card-background-color: #DEF7F0;
     --button-color: #20C997;
-    --font-family: "Font Awesome 6 Pro";
-    --product-header-font-size: 30px;
-    --big-font-size: 26px;
-    --medium-font-size: 20px;
+    --active-primary-color: #189771;
+
+    --big-font-size: 23px;
+    --medium-font-size: 19px;
     --small-font-size: 15px;
+    --title-font-size: 26px;
     --mask-text-oppacity: 30;
-    --cards-gap: 70;
+    
+    --cards-gap: 4.67rem;
+    --card-height: 21.375rem;
+    --navbar-height: 4.5rem;
+    --button-height: 2.375rem;
+    --button-width: 10rem;
+    --border-width: 0.0625rem;
+    --border-radius: 0.9rem;
+    --button-border-radius: 1.875rem;
+    --search-icon-side-size: 2rem;
+    --text-input-width: 25rem;
 }

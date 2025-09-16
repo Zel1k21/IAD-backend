@@ -9,12 +9,14 @@ import (
 )
 
 type StagesHandler struct {
-	StageRepositiry *repository.StageRepository
+	StageRepositiry       *repository.StageRepository
+	CalcRequestRepository *repository.CalcRequestRepository
 }
 
-func NewStagesHandler(stageRepository *repository.StageRepository) *StagesHandler {
+func NewStagesHandler(stageRepository *repository.StageRepository, calcRequestRepository *repository.CalcRequestRepository) *StagesHandler {
 	return &StagesHandler{
-		StageRepositiry: stageRepository,
+		StageRepositiry:       stageRepository,
+		CalcRequestRepository: calcRequestRepository,
 	}
 }
 
@@ -48,16 +50,25 @@ func (h *StagesHandler) GetStages(ctx *gin.Context) {
 		}
 	}
 
+	calcRequestID := 1
+	calcRequestEntryCount, err := h.CalcRequestRepository.GetCalcRequestEntryCountByID(calcRequestID)
+	if err != nil {
+		logrus.Error(err)
+		ctx.Status(http.StatusNotFound)
+		return
+	}
+
 	ctx.HTML(http.StatusOK, "stages.html", gin.H{
 		"title":  "Этапы жизненного цикла",
 		"stages": stages,
 		"search": CompTextInput{
 			ShowLabel:   true,
-			Label:       "Поиск",
 			Type:        "text",
 			Name:        "query",
-			Placeholder: "Введите запрос",
+			Placeholder: "Введите название этапа",
 			Value:       searchQuery,
 		},
+		"calcRequestID":         calcRequestID,
+		"calcRequestEntryCount": calcRequestEntryCount,
 	})
 }

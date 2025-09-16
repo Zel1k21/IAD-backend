@@ -1,4 +1,11 @@
 @import "vars.css";
 @import "global.css";
+@import "reset.css";
 
+@import "components/text_input.css";
 @import "components/navbar.css";
+@import "pages/stages.css";
+@import "pages/stage.css";
+@import "components/stage_card.css";
+@import "components/buttons.css";
+@import "pages/calc_request.css";

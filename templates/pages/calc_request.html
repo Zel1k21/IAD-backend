@@ -1,0 +1,20 @@
+{{template "base_start" .}}
+
+<div class="page_request">
+    <div class="product_name">
+        <h2 class = "product_name__title">Введите название товара:</h2>
+        {{template "text-input" .view.CalcRequest.ProductName}}
+    </div>
+</div>
+    <div class="page_request__cards">
+        {{range .view.Entries}}
+        {{template "stage_card_horizontal_view" .}}
+        {{end}}
+    </div>
+    <div class = "bottom_panel">
+        <button class="btn calculate_btn">Рассчитать</button>
+        <h3 class="calculation_result">Итого: {{.view.CalcRequest.CalculationResult}} т</h3>
+    </div>
+</div>
+
+{{template "base_end" .}}

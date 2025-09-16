@@ -17,8 +17,14 @@ func StartServer() {
 		logrus.Error("inicialize stage repository error: ", err)
 	}
 
+	calcReqRepo, err := repository.NewCalcRequestRepository()
+	if err != nil {
+		logrus.Error("inicialize calcRequest repository error: ", err)
+	}
+
 	stageHandler := handler.NewStageHandler(stageRepo)
-	stagesHandler := handler.NewStagesHandler(stageRepo)
+	stagesHandler := handler.NewStagesHandler(stageRepo, calcReqRepo)
+	calcRequestHandler := handler.NewCalcRequestHandler(calcReqRepo, stageRepo)
 
 	r := gin.Default()
 
@@ -27,6 +33,7 @@ func StartServer() {
 
 	r.GET("/stage/:id", stageHandler.GetStageByID)
 	r.GET("/stages", stagesHandler.GetStages)
+	r.GET("/calc_request/:id", calcRequestHandler.GetCalcRequestByID)
 
 	r.Run()
 	log.Println("server down")

@@ -1,6 +1,13 @@
-{{define "text_input"}}
-<div class="text-input">
+{{define "search_input"}}
+<div class="text-input search-input">
+    <input type="image" src="http://localhost:9000/stageimages/search-sign.svg" class="search-icon submit">
     {{if .ShowLabel}} <p class = "text-input__label"> {{.Label}} </p> {{end}}
+    <input class = "text-input__input" type = "{{.Type}}", name = "{{.Name}}", placeholder = "{{.Placeholder}}", value = "{{.Value}}">
+</div>
+{{end}}
+
+{{define "text-input"}}
+<div class="text-input">
     <input class = "text-input__input" type = "{{.Type}}", name = "{{.Name}}", placeholder = "{{.Placeholder}}", value = "{{.Value}}">
 </div>
 {{end}}
