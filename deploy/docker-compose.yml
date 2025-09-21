@@ -65,8 +65,25 @@ services:
       - minio3
       - minio4
 
-## By default this config uses default local driver,
-## For custom volumes replace with volume driver configuration.
+  postgres:
+    image: postgres:latest
+    env_file: .env
+    environment:
+      - POSTGRES_PASSWORD=${DB_POSTGRES_PASSWORD}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db-template.sql:/init-db-template.sql:ro
+    command: "/init.sh"
+
+  adminer:
+    image: adminer:latest
+    ports:
+      - "${ADMINER_PORT}:8080"
+    depends_on:
+      - postgres
+
 volumes:
   data1-1:
   data1-2:
@@ -76,3 +93,4 @@ volumes:
   data3-2:
   data4-1:
   data4-2:
+  postgres_data:
