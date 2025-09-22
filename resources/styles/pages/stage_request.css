@@ -32,7 +32,7 @@
     margin-bottom: 1.5rem;
 }
 
-.calculation_result{
+.stageulation_result{
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -42,7 +42,7 @@
     font-weight:600;
 }
 
-.calculate_btn{
+.stageulate_btn{
     background-color: var(--black-text);
     color: var(--background-color)
 }

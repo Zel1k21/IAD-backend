@@ -4,11 +4,11 @@
     <img class="page_stages__image" src="http://localhost:9000/stageimages/factory.jpg">   
     <form class="page_stages__search" action="/stages" method="get">
         {{template "search_input" .search}}
-        <a class = "request_bin" href="/calc_request/{{.calcRequestID}}">
-            <img class="calc_request_button" src="http://localhost:9000/stageimages/request_bin.png">
+        <a class = "request_bin" href="/stage_request/{{.stageRequestID}}">
+            <img class="stage_request_button" src="http://localhost:9000/stageimages/request_bin.png">
         </a>
         <div class="request_bin__items">
-            <p>{{.calcRequestEntryCount}}</p>
+            <p>{{.stageRequestEntryCount}}</p>
         </div>
     </form>
     <div class="page_stages__stages_cards">

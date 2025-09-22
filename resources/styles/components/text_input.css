@@ -1,6 +1,6 @@
 .search-input{
     width: var(--text-input-width);
-    height: calc(var(--button-height) + 0.625rem) !important;
+    height: stage(var(--button-height) + 0.625rem) !important;
 }
 
 .text-input {

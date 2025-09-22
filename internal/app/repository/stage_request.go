@@ -2,7 +2,7 @@ package repository
 
 import "fmt"
 
-type CalcRequestRepository struct {
+type StageRequestRepository struct {
 }
 
 type CompTextInput struct {
@@ -14,17 +14,17 @@ type CompTextInput struct {
 	Value       string
 }
 
-func NewCalcRequestRepository() (*CalcRequestRepository, error) {
-	return &CalcRequestRepository{}, nil
+func NewStageRequestRepository() (*StageRequestRepository, error) {
+	return &StageRequestRepository{}, nil
 }
 
-type CalcRequest struct {
-	ID                int
-	ProductName       CompTextInput
-	CalculationResult int
+type StageRequest struct {
+	ID                 int
+	ProductName        CompTextInput
+	StageulationResult int
 }
 
-type CalcRequestToStage struct {
+type StageRequestToStage struct {
 	RequestID       int
 	StageID         int
 	InputField1     int
@@ -34,7 +34,7 @@ type CalcRequestToStage struct {
 	CardResult      int
 }
 
-type CalcRequestViewEntry struct {
+type StageRequestViewEntry struct {
 	Stage           Stage
 	InputField1     int
 	Field1Dimension string
@@ -43,12 +43,12 @@ type CalcRequestViewEntry struct {
 	CardResult      int
 }
 
-type CalcRequestView struct {
-	CalcRequest CalcRequest
-	Entries     []CalcRequestViewEntry
+type StageRequestView struct {
+	StageRequest StageRequest
+	Entries      []StageRequestViewEntry
 }
 
-var calcRequests = []CalcRequest{
+var stageRequests = []StageRequest{
 	{
 		ID: 1,
 		ProductName: CompTextInput{
@@ -58,11 +58,11 @@ var calcRequests = []CalcRequest{
 			Placeholder: "Введите название этапа",
 			Value:       "Парта",
 		},
-		CalculationResult: 37,
+		StageulationResult: 37,
 	},
 }
 
-var CalcRequestToStages = []CalcRequestToStage{
+var StageRequestToStages = []StageRequestToStage{
 	{
 		RequestID:       1,
 		StageID:         1,
@@ -83,59 +83,59 @@ var CalcRequestToStages = []CalcRequestToStage{
 	},
 }
 
-func (*CalcRequestRepository) GetCalcRequestEntryCountByID(id int) (int, error) {
-	if len(calcRequests) == 0 {
+func (*StageRequestRepository) GetStageRequestEntryCountByID(id int) (int, error) {
+	if len(stageRequests) == 0 {
 		return 0, fmt.Errorf("array is empty")
 	}
 
-	var calcRequest *CalcRequest = nil
-	for _, req := range calcRequests {
+	var stageRequest *StageRequest = nil
+	for _, req := range stageRequests {
 		if req.ID == id {
-			calcRequest = &req
+			stageRequest = &req
 		}
 	}
 
-	if calcRequest == nil {
-		return 0, fmt.Errorf("calc request not found")
+	if stageRequest == nil {
+		return 0, fmt.Errorf("stage request not found")
 	}
 
-	var calcRequestEntryCount int = 0
-	for _, reqToStage := range CalcRequestToStages {
+	var stageRequestEntryCount int = 0
+	for _, reqToStage := range StageRequestToStages {
 		if reqToStage.RequestID == id {
-			calcRequestEntryCount++
+			stageRequestEntryCount++
 		}
 	}
 
-	return calcRequestEntryCount, nil
+	return stageRequestEntryCount, nil
 }
 
-func (*CalcRequestRepository) GetCalcRequestViewByID(id int, stageRepo *StageRepository) (*CalcRequestView, error) {
-	if len(calcRequests) == 0 {
+func (*StageRequestRepository) GetStageRequestViewByID(id int, stageRepo *StageRepository) (*StageRequestView, error) {
+	if len(stageRequests) == 0 {
 		return nil, fmt.Errorf("array is empty")
 	}
 
-	var calcRequest *CalcRequest = nil
-	for _, req := range calcRequests {
+	var stageRequest *StageRequest = nil
+	for _, req := range stageRequests {
 		if req.ID == id {
-			calcRequest = &req
+			stageRequest = &req
 		}
 	}
 
-	if calcRequest == nil {
-		return nil, fmt.Errorf("calc request not found")
+	if stageRequest == nil {
+		return nil, fmt.Errorf("stage request not found")
 	}
 
-	calcRequestView := CalcRequestView{
-		CalcRequest: *calcRequest,
+	stageRequestView := StageRequestView{
+		StageRequest: *stageRequest,
 	}
 
-	for _, reqToStage := range CalcRequestToStages {
+	for _, reqToStage := range StageRequestToStages {
 		if reqToStage.RequestID == id {
 			stage, err := stageRepo.GetStageByID(reqToStage.StageID)
 			if err != nil {
 				return nil, err
 			}
-			calcRequestView.Entries = append(calcRequestView.Entries, CalcRequestViewEntry{
+			stageRequestView.Entries = append(stageRequestView.Entries, StageRequestViewEntry{
 				Stage:           *stage,
 				InputField1:     reqToStage.InputField1,
 				InputField2:     reqToStage.InputField2,
@@ -146,5 +146,5 @@ func (*CalcRequestRepository) GetCalcRequestViewByID(id int, stageRepo *StageRep
 		}
 	}
 
-	return &calcRequestView, nil
+	return &stageRequestView, nil
 }

@@ -9,14 +9,14 @@ import (
 )
 
 type StagesHandler struct {
-	StageRepositiry       *repository.StageRepository
-	CalcRequestRepository *repository.CalcRequestRepository
+	StageRepositiry        *repository.StageRepository
+	StageRequestRepository *repository.StageRequestRepository
 }
 
-func NewStagesHandler(stageRepository *repository.StageRepository, calcRequestRepository *repository.CalcRequestRepository) *StagesHandler {
+func NewStagesHandler(stageRepository *repository.StageRepository, stageRequestRepository *repository.StageRequestRepository) *StagesHandler {
 	return &StagesHandler{
-		StageRepositiry:       stageRepository,
-		CalcRequestRepository: calcRequestRepository,
+		StageRepositiry:        stageRepository,
+		StageRequestRepository: stageRequestRepository,
 	}
 }
 
@@ -50,8 +50,8 @@ func (h *StagesHandler) GetStages(ctx *gin.Context) {
 		}
 	}
 
-	calcRequestID := 1
-	calcRequestEntryCount, err := h.CalcRequestRepository.GetCalcRequestEntryCountByID(calcRequestID)
+	stageRequestID := 1
+	stageRequestEntryCount, err := h.StageRequestRepository.GetStageRequestEntryCountByID(stageRequestID)
 	if err != nil {
 		logrus.Error(err)
 		ctx.Status(http.StatusNotFound)
@@ -68,7 +68,7 @@ func (h *StagesHandler) GetStages(ctx *gin.Context) {
 			Placeholder: "Введите название этапа",
 			Value:       searchQuery,
 		},
-		"calcRequestID":         calcRequestID,
-		"calcRequestEntryCount": calcRequestEntryCount,
+		"stageRequestID":         stageRequestID,
+		"stageRequestEntryCount": stageRequestEntryCount,
 	})
 }
