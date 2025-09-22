@@ -10,25 +10,26 @@ import (
 )
 
 type StageHandler struct {
-	StageRepositiry *repository.StageRepository
+	repo *repository.Repository
 }
 
-func NewStageHandler(stageRepository *repository.StageRepository) *StageHandler {
-	return &StageHandler{
-		StageRepositiry: stageRepository,
-	}
+func NewStageHandler(repository *repository.Repository) *StageHandler {
+	return &StageHandler{repo: repository}
+}
+
+func (h *StageHandler) Register(router *gin.Engine) {
+	router.GET("/stage/:id", h.GetStageByID)
 }
 
 func (h *StageHandler) GetStageByID(ctx *gin.Context) {
 	stageIDStr := ctx.Param("id")
-	stageID, err := strconv.Atoi(stageIDStr)
+	stageID, err := strconv.ParseUint(stageIDStr, 10, 64)
 	if err != nil {
 		logrus.Error(err)
 		ctx.Status(http.StatusBadRequest)
 		return
 	}
-
-	stage, err := h.StageRepositiry.GetStageByID(stageID)
+	stage, err := h.repo.Stage.GetStageByID(stageID)
 	if err != nil {
 		logrus.Error(err)
 		ctx.Status(http.StatusNotFound)
@@ -37,6 +38,6 @@ func (h *StageHandler) GetStageByID(ctx *gin.Context) {
 
 	ctx.HTML(http.StatusOK, "stage.html", gin.H{
 		"title": "Этап жизненного цикла",
-		"stage": stage,
+		"stage": *stage,
 	})
 }

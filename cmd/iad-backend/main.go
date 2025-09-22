@@ -3,11 +3,16 @@ package main
 import (
 	"iad-backend/internal/api"
 
-	"log"
+	"github.com/joho/godotenv"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
-	log.Println("Application started")
+	err := godotenv.Load("deploy/.env")
+	if err != nil {
+		panic(err)
+	}
+
+	logrus.SetLevel(logrus.ErrorLevel)
 	api.StartServer()
-	log.Println("Application terminated")
 }

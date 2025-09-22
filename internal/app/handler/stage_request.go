@@ -1,36 +1,39 @@
 package handler
 
 import (
+	"errors"
 	"iad-backend/internal/app/repository"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type StageRequestHandler struct {
-	StageRequestRepository *repository.StageRequestRepository
-	StageRepository        *repository.StageRepository
+	repo *repository.Repository
 }
 
-func NewStageRequestHandler(stageRequestRepository *repository.StageRequestRepository, stageRepository *repository.StageRepository) *StageRequestHandler {
-	return &StageRequestHandler{
-		StageRequestRepository: stageRequestRepository,
-		StageRepository:        stageRepository,
-	}
+func NewStageRequestHandler(repository *repository.Repository) *StageRequestHandler {
+	return &StageRequestHandler{repo: repository}
+}
+
+func (h *StageRequestHandler) Register(router *gin.Engine) {
+	router.GET("/stage_request/:id", h.GetStageRequestByID)
+	router.POST("/stage_request/:id", h.DeleteStageRequest)
 }
 
 func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
 	stageIDStr := ctx.Param("id")
-	stageRequestID, err := strconv.Atoi(stageIDStr)
+	reqID, err := strconv.ParseUint(stageIDStr, 10, 64)
 	if err != nil {
 		logrus.Error(err)
 		ctx.Status(http.StatusBadRequest)
 		return
 	}
 
-	stageReqView, err := h.StageRequestRepository.GetStageRequestViewByID(stageRequestID, h.StageRepository)
+	stageRequest, err := h.repo.StageRequest.GetStageRequestByID(reqID, 1)
 	if err != nil {
 		logrus.Error(err)
 		ctx.Status(http.StatusNotFound)
@@ -38,7 +41,31 @@ func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
 	}
 
 	ctx.HTML(http.StatusOK, "stage_request.html", gin.H{
-		"title": "Просмотр заявки",
-		"view":  &stageReqView,
+		"title":        "Просмотр заявки",
+		"stageRequest": &stageRequest,
 	})
+}
+
+func (h *StageRequestHandler) DeleteStageRequest(ctx *gin.Context) {
+	requestIDStr := ctx.PostForm("request-id")
+	requestID, err := strconv.ParseUint(requestIDStr, 10, 64)
+	if err != nil {
+		logrus.Error(err)
+		ctx.Status(http.StatusBadRequest)
+		return
+	}
+
+	err = h.repo.StageRequest.DeleteStageRequest(requestID, 1)
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		logrus.Error(err)
+		ctx.Status(http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		logrus.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+		return
+	}
+
+	ctx.Redirect(http.StatusSeeOther, "/stages")
 }
