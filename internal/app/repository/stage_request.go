@@ -39,7 +39,7 @@ func (r *StageRequestRepository) GetStageRequestIDEntryCountByUserID(userID uint
 		return 0, 0, err
 	}
 
-	return int(count), int(stageRequest.ID), nil
+	return int(stageRequest.ID), int(count), nil
 }
 
 func (r *StageRequestRepository) GetStageRequestByID(id uint64, userID uint64) (*ds.StageRequest, error) {
@@ -84,7 +84,7 @@ func (r *StageRequestRepository) AddStageToStageRequest(stageId uint64, userId u
 
 		}
 
-		stageRequestToStage := ds.StageRequestToStage{RequestID: stageRequest.ID, StageID: stage.ID}
+		stageRequestToStage := ds.StageRequestToStage{RequestID: stageRequest.ID, StageID: stageId}
 		r.db.Create(&stageRequestToStage)
 
 		return nil

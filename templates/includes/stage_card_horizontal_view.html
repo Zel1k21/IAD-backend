@@ -4,16 +4,15 @@
         <div class="stage-card__info_panel">
             <img class="stage-card__image" src="{{ .Stage.ImageURL }}" alt="{{ .Stage.Title }}">
             <h2 class="stage-card__title">{{ .Stage.Title }}</h2>
-            <!-- <a href="/stage/{{ .Stage.ID }}" class="btn btn-details">Подробнее</a> -->
         </div>
     </div>
-    <div class="stage-card__imput">
+    <div class="stage-card__input">
         <p class = "stage-card__inputDimentions"> {{ .Field1Dimension }}</p>
-        <p class = "stage-card__inputText"> {{ .InputField1 }}</p>
+        <div class = "stage-card__inputText"> {{ template "text-input" .InputField1 }} </div>
     </div>
-    <div class="stage-card__imput">
+    <div class="stage-card__input">
         <p class = "stage-card__inputDimentions"> {{ .Field2Dimension }}</p>
-        <p class = "stage-card__inputText"> {{.InputField2}}</p>
+        <div class = "stage-card__inputText"> {{ template "text-input" .InputField2}} </div>
     </div>
     <p class= "stage-card__result"> Выбросы CO2 на этапе: <br>{{ .CardResult }}т</p>
 </div>

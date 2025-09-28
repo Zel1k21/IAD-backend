@@ -1,12 +1,12 @@
-.search-input{
-    width: var(--text-input-width);
-    height: stage(var(--button-height) + 0.625rem) !important;
-}
-
 .text-input {
     width: var(--text-input-width);
     height: var(--button-height);
     position: relative;
+}
+
+.search-input{
+    width: var(--text-input-width);
+    height: calc(var(--button-height) + 0.625rem);
 }
 
 .text-input__label {

@@ -70,7 +70,7 @@
     border-radius: var(--border-radius) 0 0 var(--border-radius);
 }
 
-.stage-card__imput{
+.stage-card__input{
     font-size: var(--medium-font-size);
     font-weight: 500;
     text-align: left;
@@ -81,15 +81,11 @@
     margin-bottom: 0.7rem;
 }
 
-.stage-card__inputText{
+.stage-card__inputText .text-input{
     height: calc(var(--button-height) - 0.3rem);
     width: 12.5rem;
     display: flex;
     align-items: center;
-    padding: 0 0.5rem;
-    background-color: var(--background-color) !important;
-    border: var(--border-width) solid var(--black-text);
-    border-radius: var(--border-radius);
 }
 
 .stage-card__result{

@@ -3,17 +3,17 @@
 <div class="page_request">
     <div class="product_name">
         <h2 class = "product_name__title">Введите название товара:</h2>
-        {{template "text-input" .view.StageRequest.ProductName}}
+        {{template "text-input" .stageRequest.ProductName}}
     </div>
 </div>
     <div class="page_request__cards">
-        {{range .view.Entries}}
+        {{range .stageRequest.Entries}}
         {{template "stage_card_horizontal_view" .}}
         {{end}}
     </div>
     <div class = "bottom_panel">
-        <button class="btn stageulate_btn">Рассчитать</button>
-        <h3 class="stageulation_result">Итого: {{.view.StageRequest.StageulationResult}} т</h3>
+        <button class="btn stage_btn">Рассчитать</button>
+        <h3 class="stage_result">Итого: {{.stageRequest.EmissionCalculationResult}} т</h3>
     </div>
 </div>
 

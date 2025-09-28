@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"iad-backend/internal/app/ds"
 	"iad-backend/internal/app/repository"
 	"net/http"
 	"strconv"
@@ -24,6 +25,39 @@ func (h *StageRequestHandler) Register(router *gin.Engine) {
 	router.POST("/stage_request/:id", h.DeleteStageRequest)
 }
 
+type StageRequestTemplateEntry struct {
+	Stage           ds.Stage
+	Field1Dimension string
+	Field2Dimension string
+	InputField1     CompTextInput
+	InputField2     CompTextInput
+	CardResult      uint64
+}
+
+func NewStageRequestTemplateEntry(stageReqEntry *ds.StageRequestToStage) *StageRequestTemplateEntry {
+	return &StageRequestTemplateEntry{
+		Stage:           stageReqEntry.Stage,
+		Field1Dimension: stageReqEntry.Stage.FirstDimensionName,
+		Field2Dimension: stageReqEntry.Stage.SecondDimensionName,
+		InputField1: CompTextInput{
+			Value:       strconv.FormatUint(stageReqEntry.InputField1, 10),
+			Placeholder: "Введите значение",
+		},
+		InputField2: CompTextInput{
+			Value:       strconv.FormatUint(stageReqEntry.InputField2, 10),
+			Placeholder: "Введите значение",
+		},
+		CardResult: stageReqEntry.StageCalculationResult,
+	}
+}
+
+type StageRequestTemplate struct {
+	ID                        uint64
+	ProductName               CompTextInput
+	Entries                   []StageRequestTemplateEntry
+	EmissionCalculationResult uint64
+}
+
 func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
 	stageIDStr := ctx.Param("id")
 	reqID, err := strconv.ParseUint(stageIDStr, 10, 64)
@@ -40,9 +74,22 @@ func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
 		return
 	}
 
+	stageReqTemplate := StageRequestTemplate{
+		ID: stageRequest.ID,
+		ProductName: CompTextInput{
+			Value:       stageRequest.ProductName,
+			Placeholder: "Название продукта",
+		},
+		EmissionCalculationResult: stageRequest.EmissionCalculationResult,
+	}
+
+	for _, stageReqToLamp := range stageRequest.StageRequestToStage {
+		stageReqTemplate.Entries = append(stageReqTemplate.Entries, *NewStageRequestTemplateEntry(&stageReqToLamp))
+	}
+
 	ctx.HTML(http.StatusOK, "stage_request.html", gin.H{
 		"title":        "Просмотр заявки",
-		"stageRequest": &stageRequest,
+		"stageRequest": &stageReqTemplate,
 	})
 }
 
