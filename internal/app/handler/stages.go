@@ -33,8 +33,8 @@ func (h *StagesHandler) GetStages(ctx *gin.Context) {
 	var stages []repository.Stage
 	var err error
 
-	searchQuery := ctx.Query("query")
-	if searchQuery == "" {
+	stageSearch := ctx.Query("query")
+	if stageSearch == "" {
 		stages, err = h.StageRepositiry.GetStages()
 		if err != nil {
 			logrus.Error(err)
@@ -42,7 +42,7 @@ func (h *StagesHandler) GetStages(ctx *gin.Context) {
 			return
 		}
 	} else {
-		stages, err = h.StageRepositiry.GetStagesByTitle(searchQuery)
+		stages, err = h.StageRepositiry.GetStagesByTitle(stageSearch)
 		if err != nil {
 			logrus.Error(err)
 			ctx.Status(http.StatusNotFound)
@@ -66,7 +66,7 @@ func (h *StagesHandler) GetStages(ctx *gin.Context) {
 			Type:        "text",
 			Name:        "query",
 			Placeholder: "Введите название этапа",
-			Value:       searchQuery,
+			Value:       stageSearch,
 		},
 		"stageRequestID":         stageRequestID,
 		"stageRequestEntryCount": stageRequestEntryCount,
