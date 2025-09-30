@@ -91,5 +91,5 @@ func (h *StagesHandler) AddStageToRequest(ctx *gin.Context) {
 		return
 	}
 
-	h.GetStages(ctx)
+	ctx.Redirect(http.StatusSeeOther, "/stages")
 }

@@ -60,13 +60,13 @@ func (r *StageRequestRepository) GetStageRequestByID(id uint64, userID uint64) (
 func (r *StageRequestRepository) AddStageToStageRequest(stageId uint64, userId uint64) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		var stage ds.Stage
-		err := r.db.First(&stage, stageId).Error
+		err := tx.First(&stage, stageId).Error
 		if err != nil {
 			return err
 		}
 
 		var stageRequest ds.StageRequest
-		err = r.db.
+		err = tx.
 			Where("status = 1 and user_id = ?", userId).
 			Take(&stageRequest).Error
 		notFound := errors.Is(err, gorm.ErrRecordNotFound)
@@ -77,7 +77,7 @@ func (r *StageRequestRepository) AddStageToStageRequest(stageId uint64, userId u
 		if notFound {
 			stageRequest = ds.StageRequest{User: ds.User{ID: userId}}
 
-			err = r.db.Create(&stageRequest).Error
+			err = tx.Create(&stageRequest).Error
 			if err != nil {
 				return err
 			}
@@ -85,7 +85,10 @@ func (r *StageRequestRepository) AddStageToStageRequest(stageId uint64, userId u
 		}
 
 		stageRequestToStage := ds.StageRequestToStage{RequestID: stageRequest.ID, StageID: stageId}
-		r.db.Create(&stageRequestToStage)
+		err = tx.Create(&stageRequestToStage).Error
+		if err != nil {
+			return err
+		}
 
 		return nil
 	})
