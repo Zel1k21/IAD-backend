@@ -102,7 +102,7 @@ func (h *StageRequestHandler) DeleteStageRequest(ctx *gin.Context) {
 		return
 	}
 
-	err = h.repo.StageRequest.DeleteStageRequest(requestID, 1)
+	err = h.repo.StageRequest.DeleteRequest(requestID, 1)
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		logrus.Error(err)
 		ctx.Status(http.StatusNotFound)

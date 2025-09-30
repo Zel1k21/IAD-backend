@@ -37,23 +37,9 @@ func (h *StagesHandler) GetStages(ctx *gin.Context) {
 	var err error
 
 	searchQuery := ctx.Query("title")
-	if searchQuery == "" {
-		stages, err = h.repo.Stage.GetStages()
-		if err != nil {
-			logrus.Error(err)
-			ctx.Status(http.StatusNotFound)
-			return
-		}
-	} else {
-		stages, err = h.repo.Stage.GetStagesByTitle(searchQuery)
-		if err != nil {
-			logrus.Error(err)
-			ctx.Status(http.StatusNotFound)
-			return
-		}
-	}
+	stages, err = h.repo.Stage.GetStages(searchQuery)
 
-	stageRequestID, stageRequestEntryCount, err := h.repo.StageRequest.GetStageRequestIDEntryCountByUserID(1)
+	stageRequestID, stageRequestEntryCount, err := h.repo.StageRequest.GetDraftRequestInfo(1)
 	if err != nil {
 		logrus.Error(err)
 		ctx.Status(http.StatusNotFound)

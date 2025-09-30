@@ -10,6 +10,7 @@ import (
 type Repository struct {
 	Stage        *StageRepository
 	StageRequest *StageRequestRepository
+	User         *UserRepository
 }
 
 func NewRepository() (*Repository, error) {
@@ -21,5 +22,6 @@ func NewRepository() (*Repository, error) {
 	return &Repository{
 		Stage:        NewStageRepository(db),
 		StageRequest: NewStageRequestRepository(db),
+		User:         NewUserRepository(db),
 	}, nil
 }
