@@ -12,7 +12,10 @@
         {{end}}
     </div>
     <div class = "bottom_panel">
-        <button class="btn stage_btn">Рассчитать</button>
+        <form action="/stage_request/{{.stageRequest.ID}}" method="post" style="display: inline">
+            <input type="hidden" name="request-id" value="{{.stageRequest.ID}}" />
+            <button type="submit" class="btn stage_btn">Удалить</button>
+        </form>
         <h3 class="stage_result">Итого: {{.stageRequest.EmissionCalculationResult}} т</h3>
     </div>
 </div>
