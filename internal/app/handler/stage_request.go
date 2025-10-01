@@ -1,15 +1,13 @@
 package handler
 
 import (
-	"errors"
-	"iad-backend/internal/app/ds"
 	"iad-backend/internal/app/repository"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type StageRequestHandler struct {
@@ -20,99 +18,190 @@ func NewStageRequestHandler(repository *repository.Repository) *StageRequestHand
 	return &StageRequestHandler{repo: repository}
 }
 
-func (h *StageRequestHandler) Register(router *gin.Engine) {
-	router.GET("/stage_request/:id", h.GetStageRequestByID)
-	router.POST("/stage_request/:id", h.DeleteStageRequest)
+type StageRequestInfoResponse struct {
+	RequestID uint64 `json:"request_id"`
+	ItemCount int    `json:"item_count"`
 }
 
-type StageRequestTemplateEntry struct {
-	Stage           ds.Stage
-	Field1Dimension string
-	Field2Dimension string
-	InputField1     CompTextInput
-	InputField2     CompTextInput
-	CardResult      uint64
+type UpdateStageRequestResponse struct {
+	ProductName *string `json:"product_name"`
 }
 
-func NewStageRequestTemplateEntry(stageReqEntry *ds.StageRequestToStage) *StageRequestTemplateEntry {
-	return &StageRequestTemplateEntry{
-		Stage:           stageReqEntry.Stage,
-		Field1Dimension: stageReqEntry.Stage.FirstDimensionName,
-		Field2Dimension: stageReqEntry.Stage.SecondDimensionName,
-		InputField1: CompTextInput{
-			Value:       strconv.FormatUint(stageReqEntry.InputField1, 10),
-			Placeholder: "Введите значение",
-		},
-		InputField2: CompTextInput{
-			Value:       strconv.FormatUint(stageReqEntry.InputField2, 10),
-			Placeholder: "Введите значение",
-		},
-		CardResult: stageReqEntry.StageCalculationResult,
-	}
-}
-
-type StageRequestTemplate struct {
-	ID                        uint64
-	ProductName               CompTextInput
-	Entries                   []StageRequestTemplateEntry
-	EmissionCalculationResult uint64
-}
-
-func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
-	stageIDStr := ctx.Param("id")
-	reqID, err := strconv.ParseUint(stageIDStr, 10, 64)
+func (h *StageRequestHandler) GetStageRequestInfo(ctx *gin.Context) {
+	userID := GetFixedUserID()
+	requestID, itemCount, err := h.repo.StageRequest.GetDraftRequestInfo(userID)
 	if err != nil {
 		logrus.Error(err)
-		ctx.Status(http.StatusBadRequest)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get stage request info"})
 		return
 	}
 
-	stageRequest, err := h.repo.StageRequest.GetStageRequestByID(reqID, 1)
-	if err != nil {
-		logrus.Error(err)
-		ctx.Status(http.StatusNotFound)
-		return
-	}
-
-	stageReqTemplate := StageRequestTemplate{
-		ID: stageRequest.ID,
-		ProductName: CompTextInput{
-			Value:       stageRequest.ProductName,
-			Placeholder: "Название продукта",
-		},
-		EmissionCalculationResult: stageRequest.EmissionCalculationResult,
-	}
-
-	for _, stageReqToLamp := range stageRequest.StageRequestToStage {
-		stageReqTemplate.Entries = append(stageReqTemplate.Entries, *NewStageRequestTemplateEntry(&stageReqToLamp))
-	}
-
-	ctx.HTML(http.StatusOK, "stage_request.html", gin.H{
-		"title":        "Просмотр заявки",
-		"stageRequest": &stageReqTemplate,
+	ctx.JSON(http.StatusOK, StageRequestInfoResponse{
+		RequestID: requestID,
+		ItemCount: itemCount,
 	})
 }
 
+func (h *StageRequestHandler) GetStageRequests(ctx *gin.Context) {
+	var statusFilter uint8
+	if statusStr := ctx.Query("status"); statusStr != "" {
+		if status, err := strconv.ParseUint(statusStr, 10, 8); err == nil {
+			statusFilter = uint8(status)
+		}
+	}
+
+	var dateFrom, dateTo *time.Time
+	if dateFromStr := ctx.Query("date_from"); dateFromStr != "" {
+		if parsed, err := time.Parse("2006-01-02", dateFromStr); err == nil {
+			dateFrom = &parsed
+		}
+	}
+	if dateToStr := ctx.Query("date_to"); dateToStr != "" {
+		if parsed, err := time.Parse("2006-01-02", dateToStr); err == nil {
+			dateTo = &parsed
+		}
+	}
+
+	requests, err := h.repo.StageRequest.GetStageRequests(statusFilter, dateFrom, dateTo)
+	if err != nil {
+		logrus.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get stage requests"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, requests)
+}
+
+func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request ID"})
+		return
+	}
+
+	userID := GetFixedUserID()
+	request, err := h.repo.StageRequest.GetStageRequestByID(id, userID)
+	if err != nil {
+		logrus.Error(err)
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Stage request not found"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, request)
+}
+
+func (h *StageRequestHandler) UpdateStageRequest(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stage request ID"})
+		return
+	}
+
+	var req UpdateStageRequestResponse
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stage request data"})
+		return
+	}
+
+	if err := h.repo.StageRequest.UpdateStageRequest(id, req.ProductName); err != nil {
+		logrus.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update stage request"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Stage request updated successfully"})
+}
+
+func (h *StageRequestHandler) FormStageRequest(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stage request ID"})
+		return
+	}
+
+	userID := GetFixedUserID()
+	if err := h.repo.StageRequest.FormRequest(id, userID); err != nil {
+		logrus.Error(err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Stage request formed successfully"})
+}
+
+func (h *StageRequestHandler) ResolveStageRequest(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stage request ID"})
+		return
+	}
+
+	emissionCalculationResult := h.repo.StageRequest.CalculateEmission(id)
+
+	deliveryDate := time.Now().AddDate(0, 1, 0)
+
+	//emissionCalculationResult := uint64(0)
+
+	// request, err := h.repo.StageRequest.GetStageRequestByID(id, GetFixedUserID())
+	// if err == nil {
+	// 	for _, entry := range request.StageRequestToStage {
+	// 		emissionCalculationResult += entry.StageCalculationResult
+	// 	}
+	// }
+
+	moderatorID := uint64(2)
+	if err := h.repo.StageRequest.ResolveOrRejectRequest(id, moderatorID, 4); err != nil {
+		logrus.Error(err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	response := gin.H{
+		"message": "Stage request resolved successfully",
+		"calculated_data": gin.H{
+			"emission calculation result": emissionCalculationResult,
+			"delivery_date":               deliveryDate.Format("2006-01-02"),
+		},
+	}
+	ctx.JSON(http.StatusOK, response)
+}
+
+func (h *StageRequestHandler) RejectStageRequest(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stage request ID"})
+		return
+	}
+
+	moderatorID := uint64(2)
+	if err := h.repo.StageRequest.ResolveOrRejectRequest(id, moderatorID, 5); err != nil {
+		logrus.Error(err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Stage request rejected successfully"})
+}
+
 func (h *StageRequestHandler) DeleteStageRequest(ctx *gin.Context) {
-	requestIDStr := ctx.PostForm("request-id")
-	requestID, err := strconv.ParseUint(requestIDStr, 10, 64)
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
-		logrus.Error(err)
-		ctx.Status(http.StatusBadRequest)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stage request ID"})
 		return
 	}
 
-	err = h.repo.StageRequest.DeleteRequest(requestID, 1)
-	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+	userID := GetFixedUserID()
+	if err := h.repo.StageRequest.DeleteRequest(id, userID); err != nil {
 		logrus.Error(err)
-		ctx.Status(http.StatusNotFound)
-		return
-	}
-	if err != nil {
-		logrus.Error(err)
-		ctx.Status(http.StatusInternalServerError)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete stage request"})
 		return
 	}
 
-	ctx.Redirect(http.StatusSeeOther, "/stages")
+	ctx.JSON(http.StatusOK, gin.H{"message": "Stage request deleted successfully"})
 }

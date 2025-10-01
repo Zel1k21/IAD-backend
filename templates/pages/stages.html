@@ -1,7 +1,10 @@
 {{template "base_start" .}}
 
 <div class="page_stages">
-    <img class="page_stages__image" src="http://localhost:9000/stageimages/factory.jpg">   
+    <img
+        class="page_stages__image"
+        src="http://localhost:9000/stageimages/factory.jpg"
+    />
     <form class="page_stages__search" action="/stages" method="get">
         {{template "search_input" .search}}
         <a class = "request_bin" href="/stage_request/{{.stageRequestID}}">
@@ -12,9 +15,7 @@
         </div>
     </form>
     <div class="page_stages__stages_cards">
-        {{range .stages}}
-        {{template "stage_card_vertical" .}}
-        {{end}}
+        {{range .stages}} {{template "stage_card_vertical" .}} {{end}}
     </div>
 </div>
 

@@ -139,6 +139,8 @@ func (r *StageRequestRepository) ResolveOrRejectRequest(id uint64, moderatorID u
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		var request ds.StageRequest
 		err := tx.
+			Preload("StageRequestToStage").
+			Preload("StageRequestToStage.Stage").
 			Where("id = ? AND status = 3", id).
 			First(&request).Error
 
@@ -146,7 +148,23 @@ func (r *StageRequestRepository) ResolveOrRejectRequest(id uint64, moderatorID u
 			return err
 		}
 
-		calculatedEmission := r.calculateEmission(request.ID)
+		for i := range request.StageRequestToStage {
+			stageRequestToStage := &request.StageRequestToStage[i]
+			stage := stageRequestToStage.Stage
+			stageEmission := uint64(
+				float64(stageRequestToStage.InputField1)*stage.FirstDimensionConst +
+					float64(stageRequestToStage.InputField2)*stage.SecondDimensionConst,
+			)
+			stageRequestToStage.StageCalculationResult = stageEmission
+
+			err := tx.Model(stageRequestToStage).
+				Update("stage_calculation_result", stageEmission).Error
+			if err != nil {
+				return err
+			}
+		}
+
+		calculatedEmission := r.CalculateEmission(request.ID)
 
 		updates := map[string]interface{}{
 			"status":                      status,
@@ -213,17 +231,30 @@ func (r *StageRequestRepository) UpdateRequestToStage(requestID uint64, stageID 
 	})
 }
 
-func (r *StageRequestRepository) calculateEmission(requestID uint64) uint64 {
-	var result struct {
-		Total uint64
+func (r *StageRequestRepository) CalculateEmission(requestID uint64) uint64 {
+	var stageRequestToStages []ds.StageRequestToStage
+
+	err := r.db.
+		Preload("Stage").
+		Where("request_id = ?", requestID).
+		Find(&stageRequestToStages).Error
+
+	if err != nil {
+		return 0
 	}
 
-	r.db.Model(&ds.StageRequestToStage{}).
-		Select("SUM(input_field1 * input_field2) as total").
-		Where("request_id = ?", requestID).
-		Scan(&result)
+	var totalEmission uint64 = 0
 
-	return result.Total
+	for _, stageRequestToStage := range stageRequestToStages {
+		stage := stageRequestToStage.Stage
+		stageEmission := uint64(
+			float64(stageRequestToStage.InputField1)*stage.FirstDimensionConst +
+				float64(stageRequestToStage.InputField2)*stage.SecondDimensionConst,
+		)
+		totalEmission += stageEmission
+	}
+
+	return totalEmission
 }
 
 func (r *StageRequestRepository) AddStageToStageRequest(stageID uint64, userID uint64) error {
