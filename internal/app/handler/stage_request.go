@@ -144,15 +144,6 @@ func (h *StageRequestHandler) ResolveStageRequest(ctx *gin.Context) {
 
 	deliveryDate := time.Now().AddDate(0, 1, 0)
 
-	//emissionCalculationResult := uint64(0)
-
-	// request, err := h.repo.StageRequest.GetStageRequestByID(id, GetFixedUserID())
-	// if err == nil {
-	// 	for _, entry := range request.StageRequestToStage {
-	// 		emissionCalculationResult += entry.StageCalculationResult
-	// 	}
-	// }
-
 	moderatorID := uint64(2)
 	if err := h.repo.StageRequest.ResolveOrRejectRequest(id, moderatorID, 4); err != nil {
 		logrus.Error(err)

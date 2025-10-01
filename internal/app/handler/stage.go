@@ -70,6 +70,7 @@ func (h *StageHandler) GetStageByID(ctx *gin.Context) {
 func (h *StageHandler) CreateStage(ctx *gin.Context) {
 	var req CreateStageRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		logrus.Errorf("CreateStage validation failed: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
 		return
 	}
@@ -179,6 +180,7 @@ func (h *StageHandler) AddStageToDraftRequest(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
+		logrus.Errorf("AddStageToDraftRequest validation failed: %v", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stage ID"})
 		return
 	}

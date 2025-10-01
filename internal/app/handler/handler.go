@@ -18,13 +18,13 @@ func RegisterHandlers(router *gin.Engine, repo *repository.Repository) {
 		stageRouter.PUT("/:id", stageHandler.UpdateStage)
 		stageRouter.DELETE("/:id", stageHandler.DeleteStage)
 		stageRouter.POST("/:id/image", stageHandler.AddStageImage)
-		stageRouter.POST("/:id/draft", stageHandler.AddStageToDraftRequest)
+		stageRouter.POST("/:id/add-to-request", stageHandler.AddStageToDraftRequest)
 	}
 
 	requestHandler := NewStageRequestHandler(repo)
 	requestRouter := apiRouter.Group("/stage-requests")
 	{
-		requestRouter.GET("/cart", requestHandler.GetStageRequestInfo)
+		requestRouter.GET("/stageRequestInfo", requestHandler.GetStageRequestInfo)
 		requestRouter.GET("", requestHandler.GetStageRequests)
 		requestRouter.GET("/:id", requestHandler.GetStageRequestByID)
 		requestRouter.PUT("/:id", requestHandler.UpdateStageRequest)
@@ -35,10 +35,10 @@ func RegisterHandlers(router *gin.Engine, repo *repository.Repository) {
 	}
 
 	requestStageHandler := NewStageRequestToStageHandler(repo)
-	requestStageRouter := apiRouter.Group("/light-request-stages")
+	requestStageRouter := apiRouter.Group("/stage-request-stages")
 	{
-		requestStageRouter.DELETE("", requestStageHandler.RemoveStageToRequestConnection)
-		requestStageRouter.PUT("", requestStageHandler.UpdateStageToRequestConnection)
+		requestStageRouter.DELETE("/:requestId/stages/:stageId", requestStageHandler.RemoveStageToRequestConnection)
+		requestStageRouter.PUT("/:requestId/stages/:stageId", requestStageHandler.UpdateStageToRequestConnection)
 	}
 
 	userHandler := NewUserHandler(repo)

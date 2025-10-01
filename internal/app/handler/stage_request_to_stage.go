@@ -3,6 +3,7 @@ package handler
 import (
 	"iad-backend/internal/app/repository"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -18,27 +19,29 @@ func NewStageRequestToStageHandler(repo *repository.Repository) *RequestStageHan
 	}
 }
 
-type RemoveStageToRequestConnection struct {
-	StageRequestID uint64 `json:"stage_request_id" binding:"required"`
-	StageID        uint64 `json:"stage_id" binding:"required"`
-}
-
 type UpdateStageToRequestConnection struct {
-	StageRequestID uint64 `json:"stage_request_id" binding:"required"`
-	StageID        uint64 `json:"stage_id" binding:"required"`
-	InputField1    uint64 `json:"input_field_1"`
-	InputField2    uint64 `json:"input_field_2"`
+	InputField1 *uint64 `json:"input_field_1"`
+	InputField2 *uint64 `json:"input_field_2"`
 }
 
 func (h *RequestStageHandler) RemoveStageToRequestConnection(ctx *gin.Context) {
-	var req RemoveStageToRequestConnection
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stage request data"})
+	requestIDStr := ctx.Param("requestId")
+	stageIDStr := ctx.Param("stageId")
+
+	requestID, err := strconv.ParseUint(requestIDStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request ID"})
+		return
+	}
+
+	stageID, err := strconv.ParseUint(stageIDStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stage ID"})
 		return
 	}
 
 	userID := GetFixedUserID()
-	if err := h.repo.StageRequest.RemoveStageFromRequest(req.StageRequestID, req.StageID, userID); err != nil {
+	if err := h.repo.StageRequest.RemoveStageFromRequest(requestID, stageID, userID); err != nil {
 		logrus.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to remove stage from request"})
 		return
@@ -48,6 +51,21 @@ func (h *RequestStageHandler) RemoveStageToRequestConnection(ctx *gin.Context) {
 }
 
 func (h *RequestStageHandler) UpdateStageToRequestConnection(ctx *gin.Context) {
+	requestIDStr := ctx.Param("requestId")
+	stageIDStr := ctx.Param("stageId")
+
+	requestID, err := strconv.ParseUint(requestIDStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request ID"})
+		return
+	}
+
+	stageID, err := strconv.ParseUint(stageIDStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stage ID"})
+		return
+	}
+
 	var req UpdateStageToRequestConnection
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stage request data"})
@@ -55,7 +73,7 @@ func (h *RequestStageHandler) UpdateStageToRequestConnection(ctx *gin.Context) {
 	}
 
 	userID := GetFixedUserID()
-	if err := h.repo.StageRequest.UpdateRequestToStage(req.StageRequestID, req.StageID, userID, &req.InputField1, &req.InputField2); err != nil {
+	if err := h.repo.StageRequest.UpdateRequestToStage(requestID, stageID, userID, req.InputField1, req.InputField2); err != nil {
 		logrus.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update request stage"})
 		return
