@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
 	"errors"
@@ -95,10 +96,24 @@ func (r *StageRequestRepository) AddStageToStageRequest(stageId uint64, userId u
 }
 
 func (r *StageRequestRepository) DeleteStageRequest(requestID uint64, userID uint64) error {
-	query := "update stage_request set status = 2 where status = 1 and id = $1 and user_id = $2"
-	err := r.db.Exec(query, requestID, userID).Row().Err()
-	if err != nil {
-		return err
+	logrus.Infof("Executing SQL UPDATE for stage request ID: %d, user ID: %d", requestID, userID)
+
+	query := "UPDATE stage_requests SET status = 2 WHERE status = 1 AND id = ? AND user_id = ?"
+	result := r.db.Exec(query, requestID, userID)
+
+	if result.Error != nil {
+		logrus.Errorf("SQL UPDATE failed: %v", result.Error)
+		return result.Error
 	}
+
+	rowsAffected := result.RowsAffected
+	logrus.Infof("SQL UPDATE completed, rows affected: %d", rowsAffected)
+
+	if rowsAffected == 0 {
+		logrus.Warnf("No rows affected - stage request not found or already deleted (ID: %d, User: %d)", requestID, userID)
+		return gorm.ErrRecordNotFound
+	}
+
+	logrus.Infof("Successfully updated stage request status to 2 for ID: %d", requestID)
 	return nil
 }

@@ -95,24 +95,34 @@ func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
 
 func (h *StageRequestHandler) DeleteStageRequest(ctx *gin.Context) {
 	requestIDStr := ctx.PostForm("request-id")
-	requestID, err := strconv.ParseUint(requestIDStr, 10, 64)
-	if err != nil {
-		logrus.Error(err)
+	logrus.Infof("DeleteStageRequest called with request-id: %s", requestIDStr)
+
+	if requestIDStr == "" {
+		logrus.Error("Empty request-id parameter")
 		ctx.Status(http.StatusBadRequest)
 		return
 	}
 
-	err = h.repo.StageRequest.DeleteStageRequest(requestID, 1)
-	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-		logrus.Error(err)
-		ctx.Status(http.StatusNotFound)
+	requestID, err := strconv.ParseUint(requestIDStr, 10, 64)
+	if err != nil {
+		logrus.Errorf("Failed to parse request ID: %v", err)
+		ctx.Status(http.StatusBadRequest)
 		return
 	}
+
+	logrus.Infof("Attempting to delete stage request ID: %d for user ID: 1", requestID)
+	err = h.repo.StageRequest.DeleteStageRequest(requestID, 1)
 	if err != nil {
-		logrus.Error(err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logrus.Errorf("Stage request not found: %v", err)
+			ctx.Status(http.StatusNotFound)
+			return
+		}
+		logrus.Errorf("Failed to delete stage request: %v", err)
 		ctx.Status(http.StatusInternalServerError)
 		return
 	}
 
+	logrus.Infof("Successfully deleted stage request ID: %d, redirecting to /stages", requestID)
 	ctx.Redirect(http.StatusSeeOther, "/stages")
 }
