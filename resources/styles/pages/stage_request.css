@@ -12,7 +12,7 @@
     margin-bottom: 0.3rem;
 }
 
-.page_request__cards{
+.page_request__cards {
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -32,17 +32,22 @@
     margin-bottom: 1.5rem;
 }
 
-.stage_result{
+.stage_result {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;    
+    justify-content: center;
     gap: 0.5rem;
     font-size: var(--big-font-size);
-    font-weight:600;
+    font-weight: 600;
 }
 
-.stage_btn{
+.stage_btn {
     background-color: var(--black-text);
-    color: var(--background-color)
+    color: var(--background-color);
+}
+
+.request_bin.request_bin__disabled {
+    pointer-events: none;
+    opacity: 50%;
 }

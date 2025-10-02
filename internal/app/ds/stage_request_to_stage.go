@@ -5,7 +5,7 @@ type StageRequestToStage struct {
 	StageID                uint64       `gorm:"primary_key"`
 	StageRequest           StageRequest `gorm:"foreignKey:RequestID; references:ID"`
 	Stage                  Stage        `gorm:"foreignKey:StageID; references:ID"`
-	InputField1            uint64       `gorm:"not null"`
-	InputField2            uint64       `gorm:"not null"`
+	InputField1            uint64       `gorm:"default: null"`
+	InputField2            uint64       `gorm:"default: null"`
 	StageCalculationResult uint64       `gorm:"not null"`
 }

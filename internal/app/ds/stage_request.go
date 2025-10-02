@@ -8,7 +8,7 @@ type StageRequest struct {
 	UserID                    uint64                `gorm:"not null"`
 	User                      User                  `gorm:"foreignKey:UserID; references:ID"`
 	ModeratorID               uint64                `gorm:"default:null"`
-	Morderator                User                  `gorm:"foreignKey:ModeratorID; references:ID"`
+	Moderator                 User                  `gorm:"foreignKey:ModeratorID; references:ID"`
 	CreatedAt                 time.Time             `gorm:"not null; default:now()"`
 	FormedAt                  time.Time             `gorm:"default:null"`
 	ClosedAt                  time.Time             `gorm:"default:null"`

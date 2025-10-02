@@ -1,20 +1,29 @@
 {{template "base_start" .}}
 
 <div class="page_stages">
-    <img class="page_stages__image" src="http://localhost:9000/stageimages/factory.jpg">   
+    <img
+        class="page_stages__image"
+        src="http://localhost:9000/stageimages/factory.jpg"
+    />
     <form class="page_stages__search" action="/stages" method="get">
         {{template "search_input" .search}}
-        <a class = "request_bin" href="/stage_request/{{.stageRequestID}}">
-            <img class="stage_request_button" src="http://localhost:9000/stageimages/request_bin.png">
+        <a
+            class="request_bin {{if not .stageRequestID}} request_bin__disabled {{end}}"
+            href="/stage_request/{{.stageRequestID}}"
+        >
+            <img
+                class="stage_request_button"
+                src="http://localhost:9000/stageimages/request_bin.png"
+            />
         </a>
         <div class="request_bin__items">
+            {{if .stageRequestID}}
             <p>{{.stageRequestEntryCount}}</p>
+            {{end}}
         </div>
     </form>
     <div class="page_stages__stages_cards">
-        {{range .stages}}
-        {{template "stage_card_vertical" .}}
-        {{end}}
+        {{range .stages}} {{template "stage_card_vertical" .}} {{end}}
     </div>
 </div>
 
