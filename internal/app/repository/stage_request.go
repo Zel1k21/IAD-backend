@@ -85,6 +85,17 @@ func (r *StageRequestRepository) AddStageToStageRequest(stageId uint64, userId u
 
 		}
 
+		var existingStageRequestToStage ds.StageRequestToStage
+		err = tx.
+			Where("request_id = ? AND stage_id = ?", stageRequest.ID, stageId).
+			First(&existingStageRequestToStage).Error
+
+		if err == nil {
+			return nil
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
 		stageRequestToStage := ds.StageRequestToStage{RequestID: stageRequest.ID, StageID: stageId}
 		err = tx.Create(&stageRequestToStage).Error
 		if err != nil {
