@@ -63,14 +63,14 @@ func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
 	reqID, err := strconv.ParseUint(stageIDStr, 10, 64)
 	if err != nil {
 		logrus.Error(err)
-		ctx.Status(http.StatusBadRequest)
+		ctx.Redirect(http.StatusSeeOther, "/stages")
 		return
 	}
 
 	stageRequest, err := h.repo.StageRequest.GetStageRequestByID(reqID, 1)
 	if err != nil {
 		logrus.Error(err)
-		ctx.Status(http.StatusNotFound)
+		ctx.Redirect(http.StatusSeeOther, "/stages")
 		return
 	}
 
