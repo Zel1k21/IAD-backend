@@ -1,23 +1,27 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"mime/multipart"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/minio/minio-go/v7"
 	"gorm.io/gorm"
 
 	"iad-backend/internal/app/ds"
 )
 
 type StageRepository struct {
-	db *gorm.DB
+	db          *gorm.DB
+	minioClient *minio.Client
 }
 
-func NewStageRepository(db *gorm.DB) *StageRepository {
-	return &StageRepository{db: db}
+func NewStageRepository(db *gorm.DB, minioClient *minio.Client) *StageRepository {
+	return &StageRepository{db: db, minioClient: minioClient}
 }
 
 func (r *StageRepository) GetStageByID(id uint64) (*ds.Stage, error) {
@@ -97,7 +101,7 @@ func (r *StageRepository) AddStageImage(id uint64, fileHeader *multipart.FileHea
 		newFileName := fmt.Sprintf("stage_%d_%d%s", id, time.Now().Unix(), fileExt)
 		newFileName = strings.ToLower(newFileName)
 
-		imageURL, err := r.saveImageToMinIO(newFileName)
+		imageURL, err := r.SaveImageToMinio(newFileName, fileHeader)
 		if err != nil {
 			return err
 		}
@@ -139,8 +143,34 @@ func (r *StageRepository) AddStageToDraftRequest(stageID uint64, userID uint64) 
 	})
 }
 
-func (r *StageRepository) saveImageToMinIO(fileName string) (string, error) {
-	return fmt.Sprintf("http://localhost:9000/stage-images/%s", fileName), nil
+const stageImagesBucket = "stageimages"
+
+func (r *StageRepository) SaveImageToMinio(fileName string, fileHeader *multipart.FileHeader) (string, error) {
+	file, err := fileHeader.Open()
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	fileSize := fileHeader.Size
+
+	contentType := "application/octet-stream"
+	if strings.HasSuffix(strings.ToLower(fileName), ".jpg") || strings.HasSuffix(strings.ToLower(fileName), ".jpeg") {
+		contentType = "image/jpeg"
+	} else if strings.HasSuffix(strings.ToLower(fileName), ".png") {
+		contentType = "image/png"
+	} else if strings.HasSuffix(strings.ToLower(fileName), ".gif") {
+		contentType = "image/gif"
+	}
+
+	_, err = r.minioClient.PutObject(context.Background(), stageImagesBucket, fileName, file, fileSize, minio.PutObjectOptions{
+		ContentType: contentType,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%s:%s/%s/%s", os.Getenv("MINIO_HOST"), os.Getenv("MINIO_SERVER_PORT"), stageImagesBucket, fileName), nil
 }
 
 func (r *StageRepository) deleteImageFile(imageURL string) error {

@@ -81,7 +81,6 @@ func (h *UserHandler) GetProfile(ctx *gin.Context) {
 	profile := gin.H{
 		"id":       user.ID,
 		"username": user.Username,
-		"is_mod":   user.IsMod,
 	}
 
 	ctx.JSON(http.StatusOK, profile)
