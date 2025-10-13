@@ -14,6 +14,46 @@ type StageRequestHandler struct {
 	repo *repository.Repository
 }
 
+type StagesRequestsFilterResponse struct {
+	ID          uint64    `json:"id"`
+	Status      uint8     `json:"Status"`
+	UserID      uint64    `json:"UserID"`
+	ModeratorID uint64    `json:"ModeratorID"`
+	CreatedAt   time.Time `json:"CreatedAt"`
+	FormedAt    time.Time `json:"FormedAt"`
+	ClosedAt    time.Time `json:"ClosedAt"`
+	ProductName string    `json:"ProductName"`
+}
+
+type StageRequestResponse struct {
+	ID                   uint64                        `json:"id"`
+	ProductName          string                        `json:"ProductName"`
+	StageRequestToStage  []StageRequestToStageResponse `json:"StageRequestToStage"`
+	FirstDimensionName   string                        `json:"FirstDimensionName"`
+	FirstDimensionConst  float64                       `json:"FirstDimensionConst"`
+	SecondDimensionName  string                        `json:"SecondDimensionName"`
+	SecondDimensionConst float64                       `json:"SecondDimensionConst"`
+	InputField1          uint64                        `json:"input_field_1"`
+	InputField2          uint64                        `json:"input_field_2"`
+}
+
+type StageRequestDetailResponse struct {
+	ID                   uint64                              `json:"id"`
+	CreatedAt            time.Time                           `json:"created_at"`
+	ProductName          string                              `json:"product_name"`
+	StageRequestToStages []StageRequestToStageDetailResponse `json:"stage_request_to_stages"`
+}
+
+type StageRequestToStageDetailResponse struct {
+	FirstDimensionName   string  `json:"first_dimension_name"`
+	FirstDimensionConst  float64 `json:"first_dimension_const"`
+	SecondDimensionName  string  `json:"second_dimension_name"`
+	SecondDimensionConst float64 `json:"second_dimension_const"`
+	InputField1          uint64  `json:"input_field_1"`
+	InputField2          uint64  `json:"input_field_2"`
+	StageTitle           string  `json:"stage_title"`
+}
+
 func NewStageRequestHandler(repository *repository.Repository) *StageRequestHandler {
 	return &StageRequestHandler{repo: repository}
 }
@@ -69,7 +109,21 @@ func (h *StageRequestHandler) GetStageRequests(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, requests)
+	var response []StagesRequestsFilterResponse
+	for _, stageRequest := range requests {
+		response = append(response, StagesRequestsFilterResponse{
+			ID:          stageRequest.ID,
+			Status:      stageRequest.Status,
+			UserID:      stageRequest.UserID,
+			ModeratorID: stageRequest.ModeratorID,
+			CreatedAt:   stageRequest.CreatedAt,
+			FormedAt:    stageRequest.FormedAt,
+			ClosedAt:    stageRequest.ClosedAt,
+			ProductName: stageRequest.ProductName,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, response)
 }
 
 func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
@@ -88,7 +142,28 @@ func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, request)
+	// Transform to response with only required fields
+	response := StageRequestDetailResponse{
+		ID:          request.ID,
+		CreatedAt:   request.CreatedAt,
+		ProductName: request.ProductName,
+	}
+
+	// Transform StageRequestToStage items
+	for _, stageToRequest := range request.StageRequestToStage {
+		stageDetail := StageRequestToStageDetailResponse{
+			StageTitle:           stageToRequest.Stage.Title,
+			FirstDimensionName:   stageToRequest.Stage.FirstDimensionName,
+			FirstDimensionConst:  stageToRequest.Stage.FirstDimensionConst,
+			SecondDimensionName:  stageToRequest.Stage.SecondDimensionName,
+			SecondDimensionConst: stageToRequest.Stage.SecondDimensionConst,
+			InputField1:          stageToRequest.InputField1,
+			InputField2:          stageToRequest.InputField2,
+		}
+		response.StageRequestToStages = append(response.StageRequestToStages, stageDetail)
+	}
+
+	ctx.JSON(http.StatusOK, response)
 }
 
 func (h *StageRequestHandler) UpdateStageRequest(ctx *gin.Context) {

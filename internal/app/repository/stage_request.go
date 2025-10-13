@@ -155,7 +155,6 @@ func (r *StageRequestRepository) ResolveOrRejectRequest(id uint64, moderatorID u
 				float64(stageRequestToStage.InputField1)*stage.FirstDimensionConst +
 					float64(stageRequestToStage.InputField2)*stage.SecondDimensionConst,
 			)
-			stageRequestToStage.StageCalculationResult = stageEmission
 
 			err := tx.Model(stageRequestToStage).
 				Update("stage_calculation_result", stageEmission).Error

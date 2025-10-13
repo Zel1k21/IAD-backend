@@ -121,7 +121,6 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Login successful",
 		"user_id": user.ID,
-		"is_mod":  user.IsMod,
 	})
 }
 

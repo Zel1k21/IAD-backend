@@ -19,6 +19,12 @@ func NewStageRequestToStageHandler(repo *repository.Repository) *RequestStageHan
 	}
 }
 
+type StageRequestToStageResponse struct {
+	Stage       []StageResponse `json:"stage"`
+	InputField1 uint64          `json:"input_field_1"`
+	InputField2 uint64          `json:"input_field_2"`
+}
+
 type UpdateStageToRequestConnection struct {
 	InputField1 *uint64 `json:"input_field_1"`
 	InputField2 *uint64 `json:"input_field_2"`

@@ -36,17 +36,43 @@ type UpdateStageRequest struct {
 	SecondDimensionConst *float64 `json:"second_dimension_const"`
 }
 
+type StagesFilterResponse struct {
+	ID       uint64 `json:"id"`
+	Title    string `json:"title"`
+	ImageURL string `json:"image_url"`
+}
+
+type StageResponse struct {
+	ID                   uint64  `json:"id"`
+	Title                string  `json:"title"`
+	ImageURL             string  `json:"image_url"`
+	Description          string  `json:"description"`
+	FirstDimensionName   string  `json:"first_dimension_name"`
+	FirstDimensionConst  float64 `json:"first_dimension_const"`
+	SecondDimensionName  string  `json:"second_dimension_name"`
+	SecondDimensionConst float64 `json:"second_dimension_const"`
+}
+
 func (h *StageHandler) GetStages(ctx *gin.Context) {
 	searchQuery := ctx.Query("title")
 
-	stage, err := h.repo.Stage.GetStages(searchQuery)
+	stages, err := h.repo.Stage.GetStages(searchQuery)
 	if err != nil {
 		logrus.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get stages"})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, stage)
+	var response []StagesFilterResponse
+	for _, stage := range stages {
+		response = append(response, StagesFilterResponse{
+			ID:       stage.ID,
+			Title:    stage.Title,
+			ImageURL: stage.ImageURL,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, response)
 }
 
 func (h *StageHandler) GetStageByID(ctx *gin.Context) {
@@ -64,7 +90,13 @@ func (h *StageHandler) GetStageByID(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, stage)
+	responce := StageResponse{
+		ID:          stage.ID,
+		Title:       stage.Title,
+		ImageURL:    stage.ImageURL,
+		Description: stage.Description,
+	}
+	ctx.JSON(http.StatusOK, responce)
 }
 
 func (h *StageHandler) CreateStage(ctx *gin.Context) {
@@ -90,7 +122,10 @@ func (h *StageHandler) CreateStage(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, stage)
+	ctx.JSON(http.StatusCreated, gin.H{
+		"message":  "Stage created successfully",
+		"stage_id": stage.ID,
+	})
 }
 
 func (h *StageHandler) UpdateStage(ctx *gin.Context) {
