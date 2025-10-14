@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"iad-backend/internal/app/dsn"
+	"iad-backend/internal/app/redis"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -27,6 +29,7 @@ type Repository struct {
 	Stage        *StageRepository
 	StageRequest *StageRequestRepository
 	User         *UserRepository
+	redis        *redis.Client
 }
 
 func (r *Repository) GetJWTSecret() string {
@@ -58,17 +61,70 @@ func NewRepository() (*Repository, error) {
 		return nil, err
 	}
 
+	redisClient, err := InitRedisClient()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Repository{
 		db:           db,
 		Stage:        NewStageRepository(db, minioClient),
 		StageRequest: NewStageRequestRepository(db),
 		User:         NewUserRepository(db),
+		redis:        redisClient,
 	}, nil
 }
 
 func CloseDBConn(r *Repository) {
 	dbInstance, _ := r.db.DB()
 	_ = dbInstance.Close()
+
+	if r.redis != nil {
+		_ = r.redis.Close()
+	}
+}
+
+func (r *Repository) GetRedisClient() *redis.Client {
+	return r.redis
+}
+
+func InitRedisClient() (*redis.Client, error) {
+	host := os.Getenv("REDIS_HOST")
+	portStr := os.Getenv("REDIS_PORT")
+	password := os.Getenv("REDIS_PASSWORD")
+	user := os.Getenv("REDIS_USER")
+
+	if host == "" {
+		host = "localhost"
+	}
+
+	port := 6379
+	if portStr != "" {
+		var err error
+		port, err = strconv.Atoi(portStr)
+		if err != nil {
+			return nil, fmt.Errorf("redis port must be int value: %v", err)
+		}
+	}
+
+	cfg := &redis.Config{
+		Host:        host,
+		Port:        port,
+		Password:    password,
+		User:        user,
+		DialTimeout: 10 * time.Second,
+		ReadTimeout: 30 * time.Second,
+	}
+
+	client := redis.New(cfg)
+
+	// Test connection
+	ctx := context.Background()
+	if err := client.Ping(ctx); err != nil {
+		return nil, fmt.Errorf("failed to connect to Redis: %v", err)
+	}
+
+	return client, nil
 }
 
 func InitMinioClient() (*minio.Client, error) {

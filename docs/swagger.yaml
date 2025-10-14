@@ -513,16 +513,6 @@ paths:
       - stage-requests
   /stages:
     get:
-      consumes:
-      - application/json
-      description: Get a list of all stages with optional title search
-      parameters:
-      - description: Search stages by title
-        in: query
-        name: title
-        type: string
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
@@ -535,11 +525,6 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      security:
-      - BearerAuth: []
-      summary: Get all stages
-      tags:
-      - stages
     post:
       consumes:
       - application/json
@@ -609,17 +594,6 @@ paths:
       tags:
       - stages
     get:
-      consumes:
-      - application/json
-      description: Get detailed information about a specific stage
-      parameters:
-      - description: Stage ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
@@ -635,11 +609,6 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      security:
-      - BearerAuth: []
-      summary: Get stage by ID
-      tags:
-      - stages
     put:
       consumes:
       - application/json

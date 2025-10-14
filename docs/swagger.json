@@ -497,30 +497,6 @@
         },
         "/stages": {
             "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get a list of all stages with optional title search",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "stages"
-                ],
-                "summary": "Get all stages",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Search stages by title",
-                        "name": "title",
-                        "in": "query"
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -595,31 +571,6 @@
         },
         "/stages/{id}": {
             "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get detailed information about a specific stage",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "stages"
-                ],
-                "summary": "Get stage by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Stage ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",

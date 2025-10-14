@@ -118,17 +118,27 @@ func (h *StageRequestHandler) GetStageRequestInfo(ctx *gin.Context) {
 }
 
 func (h *StageRequestHandler) GetStageRequests(ctx *gin.Context) {
-	userUUID, _, ok := GetUserFromContext(ctx)
+	userUUID, scopes, ok := GetUserFromContext(ctx)
 	if !ok {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
+	// Get user ID from UUID
 	user, err := h.repo.User.GetUserByUUID(userUUID)
 	if err != nil {
 		logrus.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
 		return
+	}
+
+	// Check if user is moderator (has any moderator scopes)
+	isModerator := false
+	for _, scope := range scopes {
+		if scope == "resolve:requests" || scope == "reject:requests" || scope == "manage:users" {
+			isModerator = true
+			break
+		}
 	}
 
 	var statusFilter uint8
@@ -150,7 +160,7 @@ func (h *StageRequestHandler) GetStageRequests(ctx *gin.Context) {
 		}
 	}
 
-	requests, err := h.repo.StageRequest.GetStageRequests(user.ID, statusFilter, dateFrom, dateTo)
+	requests, err := h.repo.StageRequest.GetStageRequests(user.ID, isModerator, statusFilter, dateFrom, dateTo)
 	if err != nil {
 		logrus.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get stage requests"})
@@ -193,12 +203,13 @@ func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
 		return
 	}
 
-	userUUID, _, ok := GetUserFromContext(ctx)
+	userUUID, scopes, ok := GetUserFromContext(ctx)
 	if !ok {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
+	// Get user ID from UUID
 	user, err := h.repo.User.GetUserByUUID(userUUID)
 	if err != nil {
 		logrus.Error(err)
@@ -206,7 +217,16 @@ func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
 		return
 	}
 
-	request, err := h.repo.StageRequest.GetStageRequestByID(id, user.ID)
+	// Check if user is moderator (has any moderator scopes)
+	isModerator := false
+	for _, scope := range scopes {
+		if scope == "resolve:requests" || scope == "reject:requests" || scope == "manage:users" {
+			isModerator = true
+			break
+		}
+	}
+
+	request, err := h.repo.StageRequest.GetStageRequestByID(id, user.ID, isModerator)
 	if err != nil {
 		logrus.Error(err)
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Stage request not found"})

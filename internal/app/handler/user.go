@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"iad-backend/internal/app/ds"
 	"iad-backend/internal/app/repository"
 	"iad-backend/internal/app/role"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -63,6 +65,10 @@ type UpdateProfileRequest struct {
 
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
+type LogoutRequest struct {
+	RefreshToken string `json:"refresh_token"`
 }
 
 // @Summary      Register a new user
@@ -182,6 +188,18 @@ func (h *UserHandler) RefreshToken(ctx *gin.Context) {
 		return
 	}
 
+	// Check if refresh token is in Redis blacklist
+	redisClient := h.repo.GetRedisClient()
+	if redisClient != nil {
+		isBlacklisted, err := redisClient.CheckJWTInBlacklist(context.Background(), req.RefreshToken)
+		if err != nil {
+			logrus.WithError(err).Error("Failed to check Redis blacklist for refresh token")
+		} else if isBlacklisted {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token has been revoked"})
+			return
+		}
+	}
+
 	if !claims.IsRefresh {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Not a refresh token"})
 		return
@@ -288,9 +306,58 @@ func (h *UserHandler) UpdateProfile(ctx *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
+// @Param        request body LogoutRequest false "Optional refresh token to blacklist"
 // @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
 // @Router       /users/logout [post]
 func (h *UserHandler) Logout(ctx *gin.Context) {
+	jwtStr := ctx.GetHeader("Authorization")
+	if !strings.HasPrefix(jwtStr, jwtPrefix) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Authorization header required"})
+		return
+	}
+
+	jwtStr = jwtStr[len(jwtPrefix):]
+
+	claims := &ds.JWTClaims{}
+	token, err := jwt.ParseWithClaims(jwtStr, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(h.repo.GetJWTSecret()), nil
+	})
+
+	if err != nil || !token.Valid {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid token"})
+		return
+	}
+
+	// Add access token to Redis blacklist
+	redisClient := h.repo.GetRedisClient()
+	if redisClient != nil {
+		err = redisClient.WriteJWTToBlacklist(context.Background(), jwtStr, claims.ExpiresAt.Time)
+		if err != nil {
+			logrus.Error("Failed to add access token to blacklist: ", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to logout"})
+			return
+		}
+
+		// Check if refresh token is provided in request body
+		var req LogoutRequest
+		if err := ctx.ShouldBindJSON(&req); err == nil && req.RefreshToken != "" {
+			// Validate and blacklist the provided refresh token
+			refreshClaims := &ds.JWTClaims{}
+			refreshToken, err := jwt.ParseWithClaims(req.RefreshToken, refreshClaims, func(token *jwt.Token) (interface{}, error) {
+				return []byte(h.repo.GetJWTSecret()), nil
+			})
+
+			if err == nil && refreshToken.Valid && refreshClaims.IsRefresh {
+				err = redisClient.WriteJWTToBlacklist(context.Background(), req.RefreshToken, refreshClaims.ExpiresAt.Time)
+				if err != nil {
+					logrus.Error("Failed to add refresh token to blacklist: ", err)
+				}
+			}
+		}
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{"message": "Logout successful"})
 }
 

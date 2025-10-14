@@ -11,11 +11,17 @@ func RegisterHandlers(router *gin.Engine, repo *repository.Repository) {
 
 	userHandler := NewUserHandler(repo)
 
+	// Public routes (no auth required)
 	publicRouter := apiRouter.Group("")
 	{
 		publicRouter.POST("/users/register", userHandler.Register)
 		publicRouter.POST("/users/login", userHandler.Login)
 		publicRouter.POST("/users/refresh", userHandler.RefreshToken)
+
+		// Public stage routes
+		stageHandler := NewStageHandler(repo)
+		publicRouter.GET("/stages", stageHandler.GetStages)
+		publicRouter.GET("/stages/:id", stageHandler.GetStageByID)
 	}
 
 	protectedRouter := apiRouter.Group("")
@@ -25,11 +31,10 @@ func RegisterHandlers(router *gin.Engine, repo *repository.Repository) {
 		protectedRouter.PUT("/users/profile", userHandler.UpdateProfile)
 		protectedRouter.POST("/users/logout", userHandler.Logout)
 
+		// Stage routes with role-based permissions
 		stageHandler := NewStageHandler(repo)
 		stageRouter := protectedRouter.Group("/stages")
 		{
-			stageRouter.GET("", stageHandler.GetStages)
-			stageRouter.GET("/:id", stageHandler.GetStageByID)
 			stageRouter.POST("", userHandler.ScopeMiddleware("create:stages"), stageHandler.CreateStage)
 			stageRouter.PUT("/:id", userHandler.ScopeMiddleware("update:stages"), stageHandler.UpdateStage)
 			stageRouter.DELETE("/:id", userHandler.ScopeMiddleware("delete:stages"), stageHandler.DeleteStage)

@@ -43,7 +43,7 @@ func (r *StageRequestRepository) GetDraftRequestInfo(userID uint64) (uint64, int
 	return request.ID, int(count), nil
 }
 
-func (r *StageRequestRepository) GetStageRequests(userID uint64, statusFilter uint8, dateFrom, dateTo *time.Time) ([]ds.StageRequest, error) {
+func (r *StageRequestRepository) GetStageRequests(userID uint64, isModerator bool, statusFilter uint8, dateFrom, dateTo *time.Time) ([]ds.StageRequest, error) {
 	var requests []ds.StageRequest
 
 	query := r.db.
@@ -53,7 +53,11 @@ func (r *StageRequestRepository) GetStageRequests(userID uint64, statusFilter ui
 		Preload("Morderator", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username")
 		}).
-		Where("user_id = ? AND status != 2", userID)
+		Where("status != 2")
+
+	if !isModerator {
+		query = query.Where("user_id = ?", userID)
+	}
 
 	if statusFilter != 0 {
 		query = query.Where("status = ?", statusFilter)
@@ -74,13 +78,18 @@ func (r *StageRequestRepository) GetStageRequests(userID uint64, statusFilter ui
 	return requests, nil
 }
 
-func (r *StageRequestRepository) GetStageRequestByID(id uint64, userID uint64) (*ds.StageRequest, error) {
+func (r *StageRequestRepository) GetStageRequestByID(id uint64, userID uint64, isModerator bool) (*ds.StageRequest, error) {
 	var request ds.StageRequest
-	err := r.db.
+	query := r.db.
 		Preload("StageRequestToStage").
 		Preload("StageRequestToStage.Stage").
-		Where("status != 2 AND user_id = ?", userID).
-		First(&request, id).Error
+		Where("status != 2")
+
+	if !isModerator {
+		query = query.Where("user_id = ?", userID)
+	}
+
+	err := query.First(&request, id).Error
 
 	if err != nil {
 		return nil, err

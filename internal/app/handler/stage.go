@@ -59,7 +59,7 @@ type StageResponse struct {
 // @Accept       json
 // @Produce      json
 // @Param        title query string false "Search stages by title"
-// @Security     BearerAuth
+
 // @Success      200  {array}   StagesFilterResponse
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /stages [get]
@@ -91,7 +91,7 @@ func (h *StageHandler) GetStages(ctx *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        id path int true "Stage ID"
-// @Security     BearerAuth
+
 // @Success      200  {object}  StageResponse
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      404  {object}  map[string]interface{}

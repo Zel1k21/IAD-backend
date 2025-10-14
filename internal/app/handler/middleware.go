@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"iad-backend/internal/app/ds"
 	"net/http"
 	"strings"
@@ -21,6 +22,18 @@ func (h *UserHandler) AuthMiddleware() gin.HandlerFunc {
 		}
 
 		jwtStr = jwtStr[len(jwtPrefix):]
+
+		// Check if token is in Redis blacklist
+		redisClient := h.repo.GetRedisClient()
+		if redisClient != nil {
+			isBlacklisted, err := redisClient.CheckJWTInBlacklist(context.Background(), jwtStr)
+			if err != nil {
+				logrus.WithError(err).Error("Failed to check Redis blacklist")
+			} else if isBlacklisted {
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token has been revoked"})
+				return
+			}
+		}
 
 		claims := &ds.JWTClaims{}
 		token, err := jwt.ParseWithClaims(jwtStr, claims, func(token *jwt.Token) (interface{}, error) {
