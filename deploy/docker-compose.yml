@@ -82,6 +82,28 @@ services:
     depends_on:
       - postgres
 
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "${REDIS_PORT}:6379"
+    command: redis-server --save 20 1 --loglevel warning ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "${REDIS_PASSWORD:+--no-auth-warning -a $REDIS_PASSWORD}",
+          "ping",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 volumes:
   data1-1:
   data1-2:
@@ -92,3 +114,4 @@ volumes:
   data4-1:
   data4-2:
   postgres_data:
+  redis_data:

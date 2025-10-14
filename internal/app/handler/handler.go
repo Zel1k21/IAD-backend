@@ -9,45 +9,52 @@ import (
 func RegisterHandlers(router *gin.Engine, repo *repository.Repository) {
 	apiRouter := router.Group("/api")
 
-	stageHandler := NewStageHandler(repo)
-	stageRouter := apiRouter.Group("/stages")
-	{
-		stageRouter.GET("", stageHandler.GetStages)
-		stageRouter.GET("/:id", stageHandler.GetStageByID)
-		stageRouter.POST("", stageHandler.CreateStage)
-		stageRouter.PUT("/:id", stageHandler.UpdateStage)
-		stageRouter.DELETE("/:id", stageHandler.DeleteStage)
-		stageRouter.POST("/:id/image", stageHandler.AddStageImage)
-		stageRouter.POST("/:id/add-to-request", stageHandler.AddStageToDraftRequest)
-	}
-
-	requestHandler := NewStageRequestHandler(repo)
-	requestRouter := apiRouter.Group("/stage-requests")
-	{
-		requestRouter.GET("/stageRequestInfo", requestHandler.GetStageRequestInfo)
-		requestRouter.GET("", requestHandler.GetStageRequests)
-		requestRouter.GET("/:id", requestHandler.GetStageRequestByID)
-		requestRouter.PUT("/:id", requestHandler.UpdateStageRequest)
-		requestRouter.PUT("/:id/form", requestHandler.FormStageRequest)
-		requestRouter.PUT("/:id/resolve", requestHandler.ResolveStageRequest)
-		requestRouter.PUT("/:id/reject", requestHandler.RejectStageRequest)
-		requestRouter.DELETE("/:id", requestHandler.DeleteStageRequest)
-	}
-
-	requestStageHandler := NewStageRequestToStageHandler(repo)
-	requestStageRouter := apiRouter.Group("/stage-request-stages")
-	{
-		requestStageRouter.DELETE("/:requestId/stages/:stageId", requestStageHandler.RemoveStageToRequestConnection)
-		requestStageRouter.PUT("/:requestId/stages/:stageId", requestStageHandler.UpdateStageToRequestConnection)
-	}
-
 	userHandler := NewUserHandler(repo)
-	userRouter := apiRouter.Group("/users")
+
+	publicRouter := apiRouter.Group("")
 	{
-		userRouter.POST("/register", userHandler.Register)
-		userRouter.GET("/profile", userHandler.GetProfile)
-		userRouter.PUT("/profile", userHandler.UpdateProfile)
-		userRouter.POST("/login", userHandler.Login)
-		userRouter.POST("/logout", userHandler.Logout)
+		publicRouter.POST("/users/register", userHandler.Register)
+		publicRouter.POST("/users/login", userHandler.Login)
+		publicRouter.POST("/users/refresh", userHandler.RefreshToken)
+	}
+
+	protectedRouter := apiRouter.Group("")
+	protectedRouter.Use(userHandler.AuthMiddleware())
+	{
+		protectedRouter.GET("/users/profile", userHandler.GetProfile)
+		protectedRouter.PUT("/users/profile", userHandler.UpdateProfile)
+		protectedRouter.POST("/users/logout", userHandler.Logout)
+
+		stageHandler := NewStageHandler(repo)
+		stageRouter := protectedRouter.Group("/stages")
+		{
+			stageRouter.GET("", stageHandler.GetStages)
+			stageRouter.GET("/:id", stageHandler.GetStageByID)
+			stageRouter.POST("", userHandler.ScopeMiddleware("create:stages"), stageHandler.CreateStage)
+			stageRouter.PUT("/:id", userHandler.ScopeMiddleware("update:stages"), stageHandler.UpdateStage)
+			stageRouter.DELETE("/:id", userHandler.ScopeMiddleware("delete:stages"), stageHandler.DeleteStage)
+			stageRouter.POST("/:id/image", userHandler.ScopeMiddleware("update:stages"), stageHandler.AddStageImage)
+			stageRouter.POST("/:id/add-to-request", userHandler.ScopeMiddleware("create:requests"), stageHandler.AddStageToDraftRequest)
+		}
+
+		requestHandler := NewStageRequestHandler(repo)
+		requestRouter := protectedRouter.Group("/stage-requests")
+		{
+			requestRouter.GET("/stageRequestInfo", requestHandler.GetStageRequestInfo)
+			requestRouter.GET("", requestHandler.GetStageRequests)
+			requestRouter.GET("/:id", requestHandler.GetStageRequestByID)
+			requestRouter.PUT("/:id", userHandler.ScopeMiddleware("update:requests"), requestHandler.UpdateStageRequest)
+			requestRouter.PUT("/:id/form", userHandler.ScopeMiddleware("update:requests"), requestHandler.FormStageRequest)
+			requestRouter.PUT("/:id/resolve", userHandler.ScopeMiddleware("resolve:requests"), requestHandler.ResolveStageRequest)
+			requestRouter.PUT("/:id/reject", userHandler.ScopeMiddleware("reject:requests"), requestHandler.RejectStageRequest)
+			requestRouter.DELETE("/:id", userHandler.ScopeMiddleware("update:requests"), requestHandler.DeleteStageRequest)
+		}
+
+		requestStageHandler := NewStageRequestToStageHandler(repo)
+		requestStageRouter := protectedRouter.Group("/stage-request-stages")
+		{
+			requestStageRouter.DELETE("/:requestId/stages/:stageId", userHandler.ScopeMiddleware("update:requests"), requestStageHandler.RemoveStageToRequestConnection)
+			requestStageRouter.PUT("/:requestId/stages/:stageId", userHandler.ScopeMiddleware("update:requests"), requestStageHandler.UpdateStageToRequestConnection)
+		}
 	}
 }

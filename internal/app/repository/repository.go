@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"iad-backend/internal/app/dsn"
 	"os"
+	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/sirupsen/logrus"
@@ -13,11 +15,36 @@ import (
 	"gorm.io/gorm"
 )
 
+type JWTConfig struct {
+	Secret        string
+	ExpiresIn     time.Duration
+	RefreshIn     time.Duration
+	SigningMethod jwt.SigningMethod
+}
+
 type Repository struct {
 	db           *gorm.DB
 	Stage        *StageRepository
 	StageRequest *StageRequestRepository
 	User         *UserRepository
+}
+
+func (r *Repository) GetJWTSecret() string {
+	return os.Getenv("JWT_SECRET")
+}
+
+func (r *Repository) GetJWTConfig() *JWTConfig {
+	secret := r.GetJWTSecret()
+	if secret == "" {
+		secret = "default-jwt-secret-key"
+	}
+
+	return &JWTConfig{
+		Secret:        secret,
+		ExpiresIn:     time.Hour * 24,
+		RefreshIn:     time.Hour * 24 * 7,
+		SigningMethod: jwt.SigningMethodHS256,
+	}
 }
 
 func NewRepository() (*Repository, error) {

@@ -1,0 +1,948 @@
+basePath: /api
+definitions:
+  handler.CreateStageRequest:
+    properties:
+      description:
+        type: string
+      first_dimension_const:
+        type: number
+      first_dimension_name:
+        type: string
+      second_dimension_const:
+        type: number
+      second_dimension_name:
+        type: string
+      title:
+        type: string
+    required:
+    - first_dimension_const
+    - first_dimension_name
+    - second_dimension_const
+    - second_dimension_name
+    - title
+    type: object
+  handler.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  handler.LoginResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+      user:
+        $ref: '#/definitions/handler.UserInfo'
+    type: object
+  handler.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  handler.RegisterRequest:
+    properties:
+      password:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  handler.StageRequestDetailResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      product_name:
+        type: string
+      stage_request_to_stages:
+        items:
+          $ref: '#/definitions/handler.StageRequestToStageDetailResponse'
+        type: array
+    type: object
+  handler.StageRequestToStageDetailResponse:
+    properties:
+      first_dimension_const:
+        type: number
+      first_dimension_name:
+        type: string
+      input_field_1:
+        type: integer
+      input_field_2:
+        type: integer
+      second_dimension_const:
+        type: number
+      second_dimension_name:
+        type: string
+      stage_title:
+        type: string
+    type: object
+  handler.StageResponse:
+    properties:
+      description:
+        type: string
+      first_dimension_const:
+        type: number
+      first_dimension_name:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      second_dimension_const:
+        type: number
+      second_dimension_name:
+        type: string
+      title:
+        type: string
+    type: object
+  handler.StagesFilterResponse:
+    properties:
+      id:
+        type: integer
+      image_url:
+        type: string
+      title:
+        type: string
+    type: object
+  handler.StagesRequestsFilterResponse:
+    properties:
+      ClosedAt:
+        type: string
+      CreatedAt:
+        type: string
+      FormedAt:
+        type: string
+      ModeratorID:
+        type: integer
+      ProductName:
+        type: string
+      Status:
+        type: integer
+      UserID:
+        type: integer
+      id:
+        type: integer
+    type: object
+  handler.UpdateProfileRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  handler.UpdateStageRequest:
+    properties:
+      description:
+        type: string
+      first_dimension_const:
+        type: number
+      first_dimension_name:
+        type: string
+      second_dimension_const:
+        type: number
+      second_dimension_name:
+        type: string
+      title:
+        type: string
+    type: object
+  handler.UpdateStageRequestResponse:
+    properties:
+      product_name:
+        type: string
+    type: object
+  handler.UpdateStageToRequestConnection:
+    properties:
+      input_field_1:
+        type: integer
+      input_field_2:
+        type: integer
+    type: object
+  handler.UserInfo:
+    properties:
+      id:
+        type: integer
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+host: localhost:8080
+info:
+  contact:
+    email: support@iad.example.com
+    name: API Support
+    url: https://github.com/your-org/iad-backend
+  description: This is the backend API for IAD (Information and Analytical Data) system.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: IAD Backend API
+  version: "1.0"
+paths:
+  /stage-request-stages/{requestId}/stages/{stageId}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a stage from a stage request
+      parameters:
+      - description: Stage Request ID
+        in: path
+        name: requestId
+        required: true
+        type: integer
+      - description: Stage ID
+        in: path
+        name: stageId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Remove stage from request
+      tags:
+      - stage-request-stages
+    put:
+      consumes:
+      - application/json
+      description: Update stage connection details in a stage request
+      parameters:
+      - description: Stage Request ID
+        in: path
+        name: requestId
+        required: true
+        type: integer
+      - description: Stage ID
+        in: path
+        name: stageId
+        required: true
+        type: integer
+      - description: Stage connection update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateStageToRequestConnection'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update stage in request
+      tags:
+      - stage-request-stages
+  /stage-requests:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of stage requests with optional filtering
+      parameters:
+      - description: Filter by status
+        in: query
+        name: status
+        type: integer
+      - description: Filter by date from (YYYY-MM-DD)
+        in: query
+        name: date_from
+        type: string
+      - description: Filter by date to (YYYY-MM-DD)
+        in: query
+        name: date_to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.StagesRequestsFilterResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get stage requests
+      tags:
+      - stage-requests
+  /stage-requests/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a stage request
+      parameters:
+      - description: Stage Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete stage request
+      tags:
+      - stage-requests
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific stage request
+      parameters:
+      - description: Stage Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.StageRequestDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get stage request by ID
+      tags:
+      - stage-requests
+    put:
+      consumes:
+      - application/json
+      description: Update an existing stage request
+      parameters:
+      - description: Stage Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Stage request update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateStageRequestResponse'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update stage request
+      tags:
+      - stage-requests
+  /stage-requests/{id}/form:
+    put:
+      consumes:
+      - application/json
+      description: Form a draft stage request into a submitted request
+      parameters:
+      - description: Stage Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Form stage request
+      tags:
+      - stage-requests
+  /stage-requests/{id}/reject:
+    put:
+      consumes:
+      - application/json
+      description: Reject a stage request (moderator action)
+      parameters:
+      - description: Stage Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Reject stage request
+      tags:
+      - stage-requests
+  /stage-requests/{id}/resolve:
+    put:
+      consumes:
+      - application/json
+      description: Resolve a stage request (moderator action)
+      parameters:
+      - description: Stage Request ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Resolve stage request
+      tags:
+      - stage-requests
+  /stages:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all stages with optional title search
+      parameters:
+      - description: Search stages by title
+        in: query
+        name: title
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.StagesFilterResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all stages
+      tags:
+      - stages
+    post:
+      consumes:
+      - application/json
+      description: Create a new stage with the provided data
+      parameters:
+      - description: Stage creation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateStageRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new stage
+      tags:
+      - stages
+  /stages/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a stage by ID
+      parameters:
+      - description: Stage ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete stage
+      tags:
+      - stages
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific stage
+      parameters:
+      - description: Stage ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.StageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get stage by ID
+      tags:
+      - stages
+    put:
+      consumes:
+      - application/json
+      description: Update an existing stage with new data
+      parameters:
+      - description: Stage ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Stage update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateStageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update stage
+      tags:
+      - stages
+  /stages/{id}/add-to-request:
+    post:
+      consumes:
+      - application/json
+      description: Add a stage to the current user's draft request
+      parameters:
+      - description: Stage ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add stage to draft request
+      tags:
+      - stages
+  /stages/{id}/image:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload and attach an image to a stage
+      parameters:
+      - description: Stage ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Stage image file
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add image to stage
+      tags:
+      - stages
+  /users/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return JWT tokens
+      parameters:
+      - description: User credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: User login
+      tags:
+      - users
+  /users/logout:
+    post:
+      consumes:
+      - application/json
+      description: Logout user (token invalidation)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: User logout
+      tags:
+      - users
+  /users/profile:
+    get:
+      consumes:
+      - application/json
+      description: Get current user's profile information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update current user's profile information
+      parameters:
+      - description: Profile update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - users
+  /users/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Get new access token using refresh token
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Refresh access token
+      tags:
+      - users
+  /users/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account
+      parameters:
+      - description: User registration data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register a new user
+      tags:
+      - users
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

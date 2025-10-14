@@ -57,7 +57,7 @@ func (r *StageRepository) CreateStage(stage *ds.Stage) error {
 func (r *StageRepository) UpdateStage(id uint64, data *ds.Stage) error {
 	return r.db.Model(&ds.Stage{}).
 		Where("id = ? AND is_deleted = false", id).
-		Updates(map[string]interface{}{
+		Updates(map[string]any{
 			"title":                  data.Title,
 			"description":            data.Description,
 			"first_dimension_name":   data.FirstDimensionName,

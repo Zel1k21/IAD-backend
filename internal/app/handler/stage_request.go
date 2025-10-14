@@ -3,6 +3,7 @@ package handler
 import (
 	"iad-backend/internal/app/repository"
 	"net/http"
+	"slices"
 	"strconv"
 	"time"
 
@@ -58,6 +59,16 @@ func NewStageRequestHandler(repository *repository.Repository) *StageRequestHand
 	return &StageRequestHandler{repo: repository}
 }
 
+// @Summary      Get draft request info
+// @Description  Get information about current user's draft request
+// @Tags         stage-requests
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  StageRequestInfoResponse
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /stage-requests/stageRequestInfo [get]
+
 type StageRequestInfoResponse struct {
 	RequestID uint64 `json:"request_id"`
 	ItemCount int    `json:"item_count"`
@@ -67,9 +78,33 @@ type UpdateStageRequestResponse struct {
 	ProductName *string `json:"product_name"`
 }
 
+// @Summary      Get stage requests
+// @Description  Get a list of stage requests with optional filtering
+// @Tags         stage-requests
+// @Accept       json
+// @Produce      json
+// @Param        status query int false "Filter by status"
+// @Param        date_from query string false "Filter by date from (YYYY-MM-DD)"
+// @Param        date_to query string false "Filter by date to (YYYY-MM-DD)"
+// @Security     BearerAuth
+// @Success      200  {array}   StagesRequestsFilterResponse
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /stage-requests [get]
 func (h *StageRequestHandler) GetStageRequestInfo(ctx *gin.Context) {
-	userID := GetFixedUserID()
-	requestID, itemCount, err := h.repo.StageRequest.GetDraftRequestInfo(userID)
+	userUUID, _, ok := GetUserFromContext(ctx)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	user, err := h.repo.User.GetUserByUUID(userUUID)
+	if err != nil {
+		logrus.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
+		return
+	}
+
+	requestID, itemCount, err := h.repo.StageRequest.GetDraftRequestInfo(user.ID)
 	if err != nil {
 		logrus.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get stage request info"})
@@ -83,6 +118,19 @@ func (h *StageRequestHandler) GetStageRequestInfo(ctx *gin.Context) {
 }
 
 func (h *StageRequestHandler) GetStageRequests(ctx *gin.Context) {
+	userUUID, _, ok := GetUserFromContext(ctx)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	user, err := h.repo.User.GetUserByUUID(userUUID)
+	if err != nil {
+		logrus.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
+		return
+	}
+
 	var statusFilter uint8
 	if statusStr := ctx.Query("status"); statusStr != "" {
 		if status, err := strconv.ParseUint(statusStr, 10, 8); err == nil {
@@ -102,7 +150,7 @@ func (h *StageRequestHandler) GetStageRequests(ctx *gin.Context) {
 		}
 	}
 
-	requests, err := h.repo.StageRequest.GetStageRequests(statusFilter, dateFrom, dateTo)
+	requests, err := h.repo.StageRequest.GetStageRequests(user.ID, statusFilter, dateFrom, dateTo)
 	if err != nil {
 		logrus.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get stage requests"})
@@ -126,6 +174,17 @@ func (h *StageRequestHandler) GetStageRequests(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
+// @Summary      Get stage request by ID
+// @Description  Get detailed information about a specific stage request
+// @Tags         stage-requests
+// @Accept       json
+// @Produce      json
+// @Param        id path int true "Stage Request ID"
+// @Security     BearerAuth
+// @Success      200  {object}  StageRequestDetailResponse
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Router       /stage-requests/{id} [get]
 func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
@@ -134,22 +193,32 @@ func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
 		return
 	}
 
-	userID := GetFixedUserID()
-	request, err := h.repo.StageRequest.GetStageRequestByID(id, userID)
+	userUUID, _, ok := GetUserFromContext(ctx)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	user, err := h.repo.User.GetUserByUUID(userUUID)
+	if err != nil {
+		logrus.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
+		return
+	}
+
+	request, err := h.repo.StageRequest.GetStageRequestByID(id, user.ID)
 	if err != nil {
 		logrus.Error(err)
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Stage request not found"})
 		return
 	}
 
-	// Transform to response with only required fields
 	response := StageRequestDetailResponse{
 		ID:          request.ID,
 		CreatedAt:   request.CreatedAt,
 		ProductName: request.ProductName,
 	}
 
-	// Transform StageRequestToStage items
 	for _, stageToRequest := range request.StageRequestToStage {
 		stageDetail := StageRequestToStageDetailResponse{
 			StageTitle:           stageToRequest.Stage.Title,
@@ -166,6 +235,18 @@ func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
+// @Summary      Update stage request
+// @Description  Update an existing stage request
+// @Tags         stage-requests
+// @Accept       json
+// @Produce      json
+// @Param        id path int true "Stage Request ID"
+// @Param        request body UpdateStageRequestResponse true "Stage request update data"
+// @Security     BearerAuth
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /stage-requests/{id} [put]
 func (h *StageRequestHandler) UpdateStageRequest(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
@@ -189,6 +270,16 @@ func (h *StageRequestHandler) UpdateStageRequest(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Stage request updated successfully"})
 }
 
+// @Summary      Form stage request
+// @Description  Form a draft stage request into a submitted request
+// @Tags         stage-requests
+// @Accept       json
+// @Produce      json
+// @Param        id path int true "Stage Request ID"
+// @Security     BearerAuth
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Router       /stage-requests/{id}/form [put]
 func (h *StageRequestHandler) FormStageRequest(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
@@ -197,8 +288,20 @@ func (h *StageRequestHandler) FormStageRequest(ctx *gin.Context) {
 		return
 	}
 
-	userID := GetFixedUserID()
-	if err := h.repo.StageRequest.FormRequest(id, userID); err != nil {
+	userUUID, _, ok := GetUserFromContext(ctx)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	user, err := h.repo.User.GetUserByUUID(userUUID)
+	if err != nil {
+		logrus.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
+		return
+	}
+
+	if err := h.repo.StageRequest.FormRequest(id, user.ID); err != nil {
 		logrus.Error(err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -207,6 +310,16 @@ func (h *StageRequestHandler) FormStageRequest(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Stage request formed successfully"})
 }
 
+// @Summary      Resolve stage request
+// @Description  Resolve a stage request (moderator action)
+// @Tags         stage-requests
+// @Accept       json
+// @Produce      json
+// @Param        id path int true "Stage Request ID"
+// @Security     BearerAuth
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Router       /stage-requests/{id}/resolve [put]
 func (h *StageRequestHandler) ResolveStageRequest(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
@@ -215,12 +328,29 @@ func (h *StageRequestHandler) ResolveStageRequest(ctx *gin.Context) {
 		return
 	}
 
-	emissionCalculationResult := h.repo.StageRequest.CalculateEmission(id)
+	userUUID, scopes, ok := GetUserFromContext(ctx)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	hasScope := slices.Contains(scopes, "resolve:requests")
+	if !hasScope {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions. Moderator role required"})
+		return
+	}
+
+	user, err := h.repo.User.GetUserByUUID(userUUID)
+	if err != nil {
+		logrus.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
+		return
+	}
 
 	deliveryDate := time.Now().AddDate(0, 1, 0)
 
-	moderatorID := uint64(2)
-	if err := h.repo.StageRequest.ResolveOrRejectRequest(id, moderatorID, 4); err != nil {
+	emissionCalculationResult, err := h.repo.StageRequest.ResolveOrRejectRequest(id, user.ID, 4)
+	if err != nil {
 		logrus.Error(err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -236,6 +366,16 @@ func (h *StageRequestHandler) ResolveStageRequest(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
+// @Summary      Reject stage request
+// @Description  Reject a stage request (moderator action)
+// @Tags         stage-requests
+// @Accept       json
+// @Produce      json
+// @Param        id path int true "Stage Request ID"
+// @Security     BearerAuth
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Router       /stage-requests/{id}/reject [put]
 func (h *StageRequestHandler) RejectStageRequest(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
@@ -244,8 +384,33 @@ func (h *StageRequestHandler) RejectStageRequest(ctx *gin.Context) {
 		return
 	}
 
-	moderatorID := uint64(2)
-	if err := h.repo.StageRequest.ResolveOrRejectRequest(id, moderatorID, 5); err != nil {
+	userUUID, scopes, ok := GetUserFromContext(ctx)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	hasScope := false
+	for _, scope := range scopes {
+		if scope == "reject:requests" {
+			hasScope = true
+			break
+		}
+	}
+	if !hasScope {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions. Moderator role required"})
+		return
+	}
+
+	user, err := h.repo.User.GetUserByUUID(userUUID)
+	if err != nil {
+		logrus.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
+		return
+	}
+
+	_, err = h.repo.StageRequest.ResolveOrRejectRequest(id, user.ID, 5)
+	if err != nil {
 		logrus.Error(err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -254,6 +419,17 @@ func (h *StageRequestHandler) RejectStageRequest(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Stage request rejected successfully"})
 }
 
+// @Summary      Delete stage request
+// @Description  Delete a stage request
+// @Tags         stage-requests
+// @Accept       json
+// @Produce      json
+// @Param        id path int true "Stage Request ID"
+// @Security     BearerAuth
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /stage-requests/{id} [delete]
 func (h *StageRequestHandler) DeleteStageRequest(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
@@ -262,8 +438,20 @@ func (h *StageRequestHandler) DeleteStageRequest(ctx *gin.Context) {
 		return
 	}
 
-	userID := GetFixedUserID()
-	if err := h.repo.StageRequest.DeleteRequest(id, userID); err != nil {
+	userUUID, _, ok := GetUserFromContext(ctx)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	user, err := h.repo.User.GetUserByUUID(userUUID)
+	if err != nil {
+		logrus.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
+		return
+	}
+
+	if err := h.repo.StageRequest.DeleteRequest(id, user.ID); err != nil {
 		logrus.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete stage request"})
 		return

@@ -3,6 +3,7 @@ package repository
 import (
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
 	"errors"
@@ -42,7 +43,7 @@ func (r *StageRequestRepository) GetDraftRequestInfo(userID uint64) (uint64, int
 	return request.ID, int(count), nil
 }
 
-func (r *StageRequestRepository) GetStageRequests(statusFilter uint8, dateFrom, dateTo *time.Time) ([]ds.StageRequest, error) {
+func (r *StageRequestRepository) GetStageRequests(userID uint64, statusFilter uint8, dateFrom, dateTo *time.Time) ([]ds.StageRequest, error) {
 	var requests []ds.StageRequest
 
 	query := r.db.
@@ -52,7 +53,7 @@ func (r *StageRequestRepository) GetStageRequests(statusFilter uint8, dateFrom, 
 		Preload("Morderator", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username")
 		}).
-		Where("status != 1 AND status != 2") // исключаем черновики и удалённые
+		Where("user_id = ? AND status != 2", userID)
 
 	if statusFilter != 0 {
 		query = query.Where("status = ?", statusFilter)
@@ -89,7 +90,7 @@ func (r *StageRequestRepository) GetStageRequestByID(id uint64, userID uint64) (
 }
 
 func (r *StageRequestRepository) UpdateStageRequest(id uint64, productName *string) error {
-	updates := make(map[string]interface{})
+	updates := make(map[string]any)
 
 	if productName != nil {
 		updates["product_name"] = *productName
@@ -124,19 +125,20 @@ func (r *StageRequestRepository) FormRequest(id uint64, userID uint64) error {
 			return errors.New("at least one stage is required")
 		}
 
-		return tx.Model(&request).Updates(map[string]interface{}{
+		return tx.Model(&request).Updates(map[string]any{
 			"status":    3,
 			"formed_at": time.Now(),
 		}).Error
 	})
 }
 
-func (r *StageRequestRepository) ResolveOrRejectRequest(id uint64, moderatorID uint64, status uint8) error {
+func (r *StageRequestRepository) ResolveOrRejectRequest(id uint64, moderatorID uint64, status uint8) (float64, error) {
 	if status != 4 && status != 5 {
-		return errors.New("invalid status for moderator action")
+		return 0, errors.New("invalid status for moderator action")
 	}
 
-	return r.db.Transaction(func(tx *gorm.DB) error {
+	var calculatedEmission float64
+	err := r.db.Transaction(func(tx *gorm.DB) error {
 		var request ds.StageRequest
 		err := tx.
 			Preload("StageRequestToStage").
@@ -147,33 +149,23 @@ func (r *StageRequestRepository) ResolveOrRejectRequest(id uint64, moderatorID u
 		if err != nil {
 			return err
 		}
+		logrus.Info(request.ID)
 
-		for i := range request.StageRequestToStage {
-			stageRequestToStage := &request.StageRequestToStage[i]
-			stage := stageRequestToStage.Stage
-			stageEmission := uint64(
-				float64(stageRequestToStage.InputField1)*stage.FirstDimensionConst +
-					float64(stageRequestToStage.InputField2)*stage.SecondDimensionConst,
-			)
-
-			err := tx.Model(stageRequestToStage).
-				Update("stage_calculation_result", stageEmission).Error
-			if err != nil {
-				return err
-			}
+		calculatedEmission = r.CalculateEmission(request.ID)
+		if calculatedEmission == 0 {
+			return errors.New("invalid emission value")
 		}
 
-		calculatedEmission := r.CalculateEmission(request.ID)
-
-		updates := map[string]interface{}{
-			"status":                      status,
-			"moderator_id":                moderatorID,
-			"closed_at":                   time.Now(),
-			"emission_calculation_result": calculatedEmission,
+		updates := map[string]any{
+			"status":       status,
+			"moderator_id": moderatorID,
+			"closed_at":    time.Now(),
 		}
 
 		return tx.Model(&request).Updates(updates).Error
 	})
+
+	return calculatedEmission, err
 }
 
 func (r *StageRequestRepository) DeleteRequest(id uint64, userID uint64) error {
@@ -211,7 +203,7 @@ func (r *StageRequestRepository) UpdateRequestToStage(requestID uint64, stageID 
 			return err
 		}
 
-		updates := make(map[string]interface{})
+		updates := make(map[string]any)
 		if input1 != nil {
 			updates["input_field1"] = *input1
 		}
@@ -230,7 +222,7 @@ func (r *StageRequestRepository) UpdateRequestToStage(requestID uint64, stageID 
 	})
 }
 
-func (r *StageRequestRepository) CalculateEmission(requestID uint64) uint64 {
+func (r *StageRequestRepository) CalculateEmission(requestID uint64) float64 {
 	var stageRequestToStages []ds.StageRequestToStage
 
 	err := r.db.
@@ -242,11 +234,11 @@ func (r *StageRequestRepository) CalculateEmission(requestID uint64) uint64 {
 		return 0
 	}
 
-	var totalEmission uint64 = 0
+	var totalEmission float64 = 0
 
 	for _, stageRequestToStage := range stageRequestToStages {
 		stage := stageRequestToStage.Stage
-		stageEmission := uint64(
+		stageEmission := float64(
 			float64(stageRequestToStage.InputField1)*stage.FirstDimensionConst +
 				float64(stageRequestToStage.InputField2)*stage.SecondDimensionConst,
 		)
