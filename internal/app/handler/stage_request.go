@@ -86,14 +86,16 @@ type UpdateStageRequestResponse struct {
 // @Param        status query int false "Filter by status"
 // @Param        date_from query string false "Filter by date from (YYYY-MM-DD)"
 // @Param        date_to query string false "Filter by date to (YYYY-MM-DD)"
-// @Security     BearerAuth
 // @Success      200  {array}   StagesRequestsFilterResponse
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /stage-requests [get]
 func (h *StageRequestHandler) GetStageRequestInfo(ctx *gin.Context) {
 	userUUID, _, ok := GetUserFromContext(ctx)
 	if !ok {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		ctx.JSON(http.StatusOK, StageRequestInfoResponse{
+			RequestID: 0,
+			ItemCount: -1,
+		})
 		return
 	}
 

@@ -1,8 +1,9 @@
 module iad-backend
 
-go 1.25.1
+go 1.24.0
 
 require (
+	github.com/gin-contrib/cors v1.7.3
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/uuid v1.6.0
 	github.com/redis/go-redis/v9 v9.0.5

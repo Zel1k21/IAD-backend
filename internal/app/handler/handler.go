@@ -22,6 +22,9 @@ func RegisterHandlers(router *gin.Engine, repo *repository.Repository) {
 		stageHandler := NewStageHandler(repo)
 		publicRouter.GET("/stages", stageHandler.GetStages)
 		publicRouter.GET("/stages/:id", stageHandler.GetStageByID)
+
+		requestHandler := NewStageRequestHandler(repo)
+		publicRouter.GET("/stage-requests/stageRequestInfo", requestHandler.GetStageRequestInfo)
 	}
 
 	protectedRouter := apiRouter.Group("")
@@ -45,7 +48,6 @@ func RegisterHandlers(router *gin.Engine, repo *repository.Repository) {
 		requestHandler := NewStageRequestHandler(repo)
 		requestRouter := protectedRouter.Group("/stage-requests")
 		{
-			requestRouter.GET("/stageRequestInfo", requestHandler.GetStageRequestInfo)
 			requestRouter.GET("", requestHandler.GetStageRequests)
 			requestRouter.GET("/:id", requestHandler.GetStageRequestByID)
 			requestRouter.PUT("/:id", userHandler.ScopeMiddleware("update:requests"), requestHandler.UpdateStageRequest)
