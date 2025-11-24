@@ -306,7 +306,6 @@ func (h *UserHandler) UpdateProfile(ctx *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
-// @Param        request body LogoutRequest false "Optional refresh token to blacklist"
 // @Success      200  {object}  map[string]interface{}
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
@@ -340,22 +339,6 @@ func (h *UserHandler) Logout(ctx *gin.Context) {
 			return
 		}
 
-		// Check if refresh token is provided in request body
-		var req LogoutRequest
-		if err := ctx.ShouldBindJSON(&req); err == nil && req.RefreshToken != "" {
-			// Validate and blacklist the provided refresh token
-			refreshClaims := &ds.JWTClaims{}
-			refreshToken, err := jwt.ParseWithClaims(req.RefreshToken, refreshClaims, func(token *jwt.Token) (interface{}, error) {
-				return []byte(h.repo.GetJWTSecret()), nil
-			})
-
-			if err == nil && refreshToken.Valid && refreshClaims.IsRefresh {
-				err = redisClient.WriteJWTToBlacklist(context.Background(), req.RefreshToken, refreshClaims.ExpiresAt.Time)
-				if err != nil {
-					logrus.Error("Failed to add refresh token to blacklist: ", err)
-				}
-			}
-		}
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Logout successful"})
