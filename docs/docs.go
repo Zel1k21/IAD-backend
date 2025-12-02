@@ -201,6 +201,41 @@ const docTemplate = `{
                 }
             }
         },
+        "/stage-requests/stageRequestInfo": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get information about current user's draft request",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stage-requests"
+                ],
+                "summary": "Get draft request info",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.StageRequestInfoResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/stage-requests/{id}": {
             "get": {
                 "security": [
@@ -1066,7 +1101,7 @@ const docTemplate = `{
         },
         "/users/register": {
             "post": {
-                "description": "Create a new user account",
+                "description": "Create a new user account and automatically login",
                 "consumes": [
                     "application/json"
                 ],
@@ -1092,8 +1127,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/handler.LoginResponse"
                         }
                     },
                     "400": {
@@ -1229,6 +1263,17 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.StageRequestInfoResponse": {
+            "type": "object",
+            "properties": {
+                "item_count": {
+                    "type": "integer"
+                },
+                "request_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "handler.StageRequestToStageDetailResponse": {
             "type": "object",
             "properties": {
@@ -1236,6 +1281,9 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "first_dimension_name": {
+                    "type": "string"
+                },
+                "image_url": {
                     "type": "string"
                 },
                 "input_field_1": {
@@ -1249,6 +1297,9 @@ const docTemplate = `{
                 },
                 "second_dimension_name": {
                     "type": "string"
+                },
+                "stage_id": {
+                    "type": "integer"
                 },
                 "stage_title": {
                     "type": "string"

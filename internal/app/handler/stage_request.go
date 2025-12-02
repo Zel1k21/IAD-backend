@@ -1,13 +1,16 @@
 package handler
 
 import (
+	"iad-backend/internal/app/ds"
 	"iad-backend/internal/app/repository"
 	"net/http"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/sirupsen/logrus"
 )
 
@@ -53,10 +56,21 @@ type StageRequestToStageDetailResponse struct {
 	InputField1          uint64  `json:"input_field_1"`
 	InputField2          uint64  `json:"input_field_2"`
 	StageTitle           string  `json:"stage_title"`
+	ImageURL             string  `json:"image_url"`
+	StageID              uint64  `json:"stage_id"`
 }
 
 func NewStageRequestHandler(repository *repository.Repository) *StageRequestHandler {
 	return &StageRequestHandler{repo: repository}
+}
+
+type StageRequestInfoResponse struct {
+	RequestID uint64 `json:"request_id"`
+	ItemCount int    `json:"item_count"`
+}
+
+type UpdateStageRequestResponse struct {
+	ProductName *string `json:"product_name"`
 }
 
 // @Summary      Get draft request info
@@ -68,30 +82,26 @@ func NewStageRequestHandler(repository *repository.Repository) *StageRequestHand
 // @Success      200  {object}  StageRequestInfoResponse
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /stage-requests/stageRequestInfo [get]
-
-type StageRequestInfoResponse struct {
-	RequestID uint64 `json:"request_id"`
-	ItemCount int    `json:"item_count"`
-}
-
-type UpdateStageRequestResponse struct {
-	ProductName *string `json:"product_name"`
-}
-
-// @Summary      Get stage requests
-// @Description  Get a list of stage requests with optional filtering
-// @Tags         stage-requests
-// @Accept       json
-// @Produce      json
-// @Param        status query int false "Filter by status"
-// @Param        date_from query string false "Filter by date from (YYYY-MM-DD)"
-// @Param        date_to query string false "Filter by date to (YYYY-MM-DD)"
-// @Success      200  {array}   StagesRequestsFilterResponse
-// @Failure      500  {object}  map[string]interface{}
-// @Router       /stage-requests [get]
 func (h *StageRequestHandler) GetStageRequestInfo(ctx *gin.Context) {
-	userUUID, _, ok := GetUserFromContext(ctx)
-	if !ok {
+	jwtStr := ctx.GetHeader("Authorization")
+	const jwtPrefix = "Bearer "
+
+	var userUUID = "Bearer "
+
+	if strings.HasPrefix(jwtStr, jwtPrefix) {
+		jwtStr = jwtStr[len(jwtPrefix):]
+
+		claims := &ds.JWTClaims{}
+		token, err := jwt.ParseWithClaims(jwtStr, claims, func(token *jwt.Token) (interface{}, error) {
+			return []byte(h.repo.GetJWTSecret()), nil
+		})
+
+		if err == nil && token.Valid && !claims.IsRefresh {
+			userUUID = claims.UserUUID.String()
+		}
+	}
+
+	if userUUID == "" {
 		ctx.JSON(http.StatusOK, StageRequestInfoResponse{
 			RequestID: 0,
 			ItemCount: -1,
@@ -99,10 +109,14 @@ func (h *StageRequestHandler) GetStageRequestInfo(ctx *gin.Context) {
 		return
 	}
 
+	// Получаем пользователя по UUID
 	user, err := h.repo.User.GetUserByUUID(userUUID)
 	if err != nil {
 		logrus.Error(err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
+		ctx.JSON(http.StatusOK, StageRequestInfoResponse{
+			RequestID: 0,
+			ItemCount: -1,
+		})
 		return
 	}
 
@@ -119,6 +133,17 @@ func (h *StageRequestHandler) GetStageRequestInfo(ctx *gin.Context) {
 	})
 }
 
+// @Summary      Get stage requests
+// @Description  Get a list of stage requests with optional filtering
+// @Tags         stage-requests
+// @Accept       json
+// @Produce      json
+// @Param        status query int false "Filter by status"
+// @Param        date_from query string false "Filter by date from (YYYY-MM-DD)"
+// @Param        date_to query string false "Filter by date to (YYYY-MM-DD)"
+// @Success      200  {array}   StagesRequestsFilterResponse
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /stage-requests [get]
 func (h *StageRequestHandler) GetStageRequests(ctx *gin.Context) {
 	userUUID, scopes, ok := GetUserFromContext(ctx)
 	if !ok {
@@ -250,6 +275,8 @@ func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
 			SecondDimensionConst: stageToRequest.Stage.SecondDimensionConst,
 			InputField1:          stageToRequest.InputField1,
 			InputField2:          stageToRequest.InputField2,
+			ImageURL:             stageToRequest.Stage.ImageURL,
+			StageID:              stageToRequest.Stage.ID,
 		}
 		response.StageRequestToStages = append(response.StageRequestToStages, stageDetail)
 	}
@@ -412,13 +439,7 @@ func (h *StageRequestHandler) RejectStageRequest(ctx *gin.Context) {
 		return
 	}
 
-	hasScope := false
-	for _, scope := range scopes {
-		if scope == "reject:requests" {
-			hasScope = true
-			break
-		}
-	}
+	hasScope := slices.Contains(scopes, "reject:requests")
 	if !hasScope {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions. Moderator role required"})
 		return
