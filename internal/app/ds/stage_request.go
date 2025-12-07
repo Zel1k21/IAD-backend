@@ -14,4 +14,5 @@ type StageRequest struct {
 	ClosedAt            time.Time             `gorm:"default:null"`
 	StageRequestToStage []StageRequestToStage `gorm:"foreignKey:RequestID; references:ID"`
 	ProductName         string                `gorm:"type:varchar(100); not null"`
+	CalculationResult   float64
 }

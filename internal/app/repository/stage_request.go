@@ -53,7 +53,7 @@ func (r *StageRequestRepository) GetStageRequests(userID uint64, isModerator boo
 		Preload("Morderator", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username")
 		}).
-		Where("status != 2")
+		Where("status != 2").Order("status ASC")
 
 	if !isModerator {
 		query = query.Where("user_id = ?", userID)

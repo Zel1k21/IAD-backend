@@ -65,6 +65,8 @@ definitions:
     type: object
   handler.StageRequestDetailResponse:
     properties:
+      calculationResult:
+        type: number
       created_at:
         type: string
       id:
@@ -134,21 +136,23 @@ definitions:
     type: object
   handler.StagesRequestsFilterResponse:
     properties:
-      ClosedAt:
+      calculationResult:
+        type: number
+      closedAt:
         type: string
-      CreatedAt:
+      createdAt:
         type: string
-      FormedAt:
+      formedAt:
         type: string
-      ModeratorID:
-        type: integer
-      ProductName:
-        type: string
-      Status:
-        type: integer
-      UserID:
-        type: integer
       id:
+        type: integer
+      moderatorID:
+        type: integer
+      productName:
+        type: string
+      status:
+        type: integer
+      userID:
         type: integer
     type: object
   handler.UpdateProfileRequest:
@@ -325,6 +329,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Get stage requests
       tags:
       - stage-requests

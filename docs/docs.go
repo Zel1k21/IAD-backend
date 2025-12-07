@@ -150,6 +150,11 @@ const docTemplate = `{
         },
         "/stage-requests": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get a list of stage requests with optional filtering",
                 "consumes": [
                     "application/json"
@@ -1246,6 +1251,9 @@ const docTemplate = `{
         "handler.StageRequestDetailResponse": {
             "type": "object",
             "properties": {
+                "calculationResult": {
+                    "type": "number"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -1352,28 +1360,31 @@ const docTemplate = `{
         "handler.StagesRequestsFilterResponse": {
             "type": "object",
             "properties": {
-                "ClosedAt": {
+                "calculationResult": {
+                    "type": "number"
+                },
+                "closedAt": {
                     "type": "string"
                 },
-                "CreatedAt": {
+                "createdAt": {
                     "type": "string"
                 },
-                "FormedAt": {
+                "formedAt": {
                     "type": "string"
-                },
-                "ModeratorID": {
-                    "type": "integer"
-                },
-                "ProductName": {
-                    "type": "string"
-                },
-                "Status": {
-                    "type": "integer"
-                },
-                "UserID": {
-                    "type": "integer"
                 },
                 "id": {
+                    "type": "integer"
+                },
+                "moderatorID": {
+                    "type": "integer"
+                },
+                "productName": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "userID": {
                     "type": "integer"
                 }
             }

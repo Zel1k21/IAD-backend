@@ -19,14 +19,15 @@ type StageRequestHandler struct {
 }
 
 type StagesRequestsFilterResponse struct {
-	ID          uint64    `json:"id"`
-	Status      uint8     `json:"Status"`
-	UserID      uint64    `json:"UserID"`
-	ModeratorID uint64    `json:"ModeratorID"`
-	CreatedAt   time.Time `json:"CreatedAt"`
-	FormedAt    time.Time `json:"FormedAt"`
-	ClosedAt    time.Time `json:"ClosedAt"`
-	ProductName string    `json:"ProductName"`
+	ID                uint64    `json:"id"`
+	Status            uint8     `json:"status"`
+	UserID            uint64    `json:"userID"`
+	ModeratorID       uint64    `json:"moderatorID"`
+	CreatedAt         time.Time `json:"createdAt"`
+	FormedAt          time.Time `json:"formedAt"`
+	ClosedAt          time.Time `json:"closedAt"`
+	ProductName       string    `json:"productName"`
+	CalculationResult float64   `json:"calculationResult"`
 }
 
 type StageRequestResponse struct {
@@ -46,6 +47,7 @@ type StageRequestDetailResponse struct {
 	CreatedAt            time.Time                           `json:"created_at"`
 	ProductName          string                              `json:"product_name"`
 	StageRequestToStages []StageRequestToStageDetailResponse `json:"stage_request_to_stages"`
+	CalculationResult    float64                             `json:"calculationResult"`
 }
 
 type StageRequestToStageDetailResponse struct {
@@ -141,6 +143,7 @@ func (h *StageRequestHandler) GetStageRequestInfo(ctx *gin.Context) {
 // @Param        status query int false "Filter by status"
 // @Param        date_from query string false "Filter by date from (YYYY-MM-DD)"
 // @Param        date_to query string false "Filter by date to (YYYY-MM-DD)"
+// @Security     BearerAuth
 // @Success      200  {array}   StagesRequestsFilterResponse
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /stage-requests [get]
@@ -197,14 +200,15 @@ func (h *StageRequestHandler) GetStageRequests(ctx *gin.Context) {
 	var response []StagesRequestsFilterResponse
 	for _, stageRequest := range requests {
 		response = append(response, StagesRequestsFilterResponse{
-			ID:          stageRequest.ID,
-			Status:      stageRequest.Status,
-			UserID:      stageRequest.UserID,
-			ModeratorID: stageRequest.ModeratorID,
-			CreatedAt:   stageRequest.CreatedAt,
-			FormedAt:    stageRequest.FormedAt,
-			ClosedAt:    stageRequest.ClosedAt,
-			ProductName: stageRequest.ProductName,
+			ID:                stageRequest.ID,
+			Status:            stageRequest.Status,
+			UserID:            stageRequest.UserID,
+			ModeratorID:       stageRequest.ModeratorID,
+			CreatedAt:         stageRequest.CreatedAt,
+			FormedAt:          stageRequest.FormedAt,
+			ClosedAt:          stageRequest.ClosedAt,
+			ProductName:       stageRequest.ProductName,
+			CalculationResult: stageRequest.CalculationResult,
 		})
 	}
 
@@ -261,9 +265,10 @@ func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
 	}
 
 	response := StageRequestDetailResponse{
-		ID:          request.ID,
-		CreatedAt:   request.CreatedAt,
-		ProductName: request.ProductName,
+		ID:                request.ID,
+		CreatedAt:         request.CreatedAt,
+		ProductName:       request.ProductName,
+		CalculationResult: request.CalculationResult,
 	}
 
 	for _, stageToRequest := range request.StageRequestToStage {
