@@ -1268,6 +1268,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/handler.StageRequestToStageDetailResponse"
                     }
+                },
+                "status": {
+                    "type": "integer"
                 }
             }
         },

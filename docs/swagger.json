@@ -1262,6 +1262,9 @@
                     "items": {
                         "$ref": "#/definitions/handler.StageRequestToStageDetailResponse"
                     }
+                },
+                "status": {
+                    "type": "integer"
                 }
             }
         },

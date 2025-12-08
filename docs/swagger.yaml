@@ -77,6 +77,8 @@ definitions:
         items:
           $ref: '#/definitions/handler.StageRequestToStageDetailResponse'
         type: array
+      status:
+        type: integer
     type: object
   handler.StageRequestInfoResponse:
     properties:

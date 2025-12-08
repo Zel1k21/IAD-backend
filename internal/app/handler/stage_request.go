@@ -48,6 +48,7 @@ type StageRequestDetailResponse struct {
 	ProductName          string                              `json:"product_name"`
 	StageRequestToStages []StageRequestToStageDetailResponse `json:"stage_request_to_stages"`
 	CalculationResult    float64                             `json:"calculationResult"`
+	Status               uint8                               `json:"status"`
 }
 
 type StageRequestToStageDetailResponse struct {
@@ -269,6 +270,7 @@ func (h *StageRequestHandler) GetStageRequestByID(ctx *gin.Context) {
 		CreatedAt:         request.CreatedAt,
 		ProductName:       request.ProductName,
 		CalculationResult: request.CalculationResult,
+		Status:            request.Status,
 	}
 
 	for _, stageToRequest := range request.StageRequestToStage {
