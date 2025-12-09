@@ -1,6 +1,11 @@
 package repository
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"os"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -141,12 +146,11 @@ func (r *StageRequestRepository) FormRequest(id uint64, userID uint64) error {
 	})
 }
 
-func (r *StageRequestRepository) ResolveOrRejectRequest(id uint64, moderatorID uint64, status uint8) (float64, error) {
+func (r *StageRequestRepository) ResolveOrRejectRequest(id uint64, moderatorID uint64, status uint8) error {
 	if status != 4 && status != 5 {
-		return 0, errors.New("invalid status for moderator action")
+		return errors.New("invalid status for moderator action")
 	}
 
-	var calculatedEmission float64
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		var request ds.StageRequest
 		err := tx.
@@ -160,21 +164,18 @@ func (r *StageRequestRepository) ResolveOrRejectRequest(id uint64, moderatorID u
 		}
 		logrus.Info(request.ID)
 
-		calculatedEmission = r.CalculateEmission(request.ID)
-		if calculatedEmission == 0 {
-			return errors.New("invalid emission value")
-		}
+		err = r.db.Model(&ds.StageRequest{}).
+			Where("id = ?", request.ID).
+			Update("status", status).Error
 
-		updates := map[string]any{
-			"status":       status,
-			"moderator_id": moderatorID,
-			"closed_at":    time.Now(),
-		}
-
-		return tx.Model(&request).Updates(updates).Error
+		return r.SendDataToCalcService(request.ID, os.Getenv("ASYNC_TOKEN"))
 	})
 
-	return calculatedEmission, err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *StageRequestRepository) DeleteRequest(id uint64, userID uint64) error {
@@ -231,30 +232,63 @@ func (r *StageRequestRepository) UpdateRequestToStage(requestID uint64, stageID 
 	})
 }
 
-func (r *StageRequestRepository) CalculateEmission(requestID uint64) float64 {
-	var stageRequestToStages []ds.StageRequestToStage
+type CalcRequest struct {
+	RequestID   uint64    `json:"id"`
+	AuthToken   string    `json:"auth_token"`
+	InputFields []float64 `json:"input_fields"`
+	Constants   []float64 `json:"stage_constants"`
+}
 
+func (r *StageRequestRepository) SendDataToCalcService(requestID uint64, authToken string) error {
+	var stageRequestToStages []ds.StageRequestToStage
+	var calcServiceURL = os.Getenv("CALC_SERVICE_URL")
 	err := r.db.
 		Preload("Stage").
 		Where("request_id = ?", requestID).
 		Find(&stageRequestToStages).Error
 
 	if err != nil {
-		return 0
+		return err
 	}
 
-	var totalEmission float64 = 0
+	var inputFields []float64
+	var constants []float64
 
-	for _, stageRequestToStage := range stageRequestToStages {
-		stage := stageRequestToStage.Stage
-		stageEmission := float64(
-			float64(stageRequestToStage.InputField1)*stage.FirstDimensionConst +
-				float64(stageRequestToStage.InputField2)*stage.SecondDimensionConst,
-		)
-		totalEmission += stageEmission
+	for _, s := range stageRequestToStages {
+		inputFields = append(inputFields, s.InputField1, s.InputField2)
+		constants = append(constants, s.Stage.FirstDimensionConst, s.Stage.SecondDimensionConst)
 	}
 
-	return totalEmission
+	payload := CalcRequest{
+		RequestID:   requestID,
+		AuthToken:   authToken,
+		InputFields: inputFields,
+		Constants:   constants,
+	}
+
+	jsonBody, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.Post(calcServiceURL, "application/json", bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode <= 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+func (r *StageRequestRepository) UpdateEmissionCalculationResult(requestId uint64, result float64) error {
+	return r.db.
+		Model(&ds.StageRequest{}).
+		Where("id = ?", requestId).
+		Update("calculation_result", result).Error
 }
 
 func (r *StageRequestRepository) AddStageToStageRequest(stageID uint64, userID uint64) error {

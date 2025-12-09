@@ -25,6 +25,7 @@ func RegisterHandlers(router *gin.Engine, repo *repository.Repository) {
 
 		requestHandler := NewStageRequestHandler(repo)
 		publicRouter.GET("/stage-requests/stageRequestInfo", requestHandler.GetStageRequestInfo)
+		publicRouter.PUT("/stage-requests/asyncUpdateCalculation", requestHandler.AsyncUpdateEmissionCalculation)
 	}
 
 	protectedRouter := apiRouter.Group("")

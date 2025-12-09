@@ -38,8 +38,8 @@ type StageRequestResponse struct {
 	FirstDimensionConst  float64                       `json:"FirstDimensionConst"`
 	SecondDimensionName  string                        `json:"SecondDimensionName"`
 	SecondDimensionConst float64                       `json:"SecondDimensionConst"`
-	InputField1          uint64                        `json:"input_field_1"`
-	InputField2          uint64                        `json:"input_field_2"`
+	InputField1          float64                       `json:"input_field_1"`
+	InputField2          float64                       `json:"input_field_2"`
 }
 
 type StageRequestDetailResponse struct {
@@ -56,11 +56,16 @@ type StageRequestToStageDetailResponse struct {
 	FirstDimensionConst  float64 `json:"first_dimension_const"`
 	SecondDimensionName  string  `json:"second_dimension_name"`
 	SecondDimensionConst float64 `json:"second_dimension_const"`
-	InputField1          uint64  `json:"input_field_1"`
-	InputField2          uint64  `json:"input_field_2"`
+	InputField1          float64 `json:"input_field_1"`
+	InputField2          float64 `json:"input_field_2"`
 	StageTitle           string  `json:"stage_title"`
 	ImageURL             string  `json:"image_url"`
 	StageID              uint64  `json:"stage_id"`
+}
+
+type AsyncUpdateEmissionCalculationResponse struct {
+	ID                uint64  `json:"request_id"`
+	CalculationResult float64 `json:"calculation_result"`
 }
 
 func NewStageRequestHandler(repository *repository.Repository) *StageRequestHandler {
@@ -405,7 +410,7 @@ func (h *StageRequestHandler) ResolveStageRequest(ctx *gin.Context) {
 
 	deliveryDate := time.Now().AddDate(0, 1, 0)
 
-	emissionCalculationResult, err := h.repo.StageRequest.ResolveOrRejectRequest(id, user.ID, 4)
+	err = h.repo.StageRequest.ResolveOrRejectRequest(id, user.ID, 4)
 	if err != nil {
 		logrus.Error(err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -415,8 +420,7 @@ func (h *StageRequestHandler) ResolveStageRequest(ctx *gin.Context) {
 	response := gin.H{
 		"message": "Stage request resolved successfully",
 		"calculated_data": gin.H{
-			"emission calculation result": emissionCalculationResult,
-			"delivery_date":               deliveryDate.Format("2006-01-02"),
+			"delivery_date": deliveryDate.Format("2006-01-02"),
 		},
 	}
 	ctx.JSON(http.StatusOK, response)
@@ -459,7 +463,7 @@ func (h *StageRequestHandler) RejectStageRequest(ctx *gin.Context) {
 		return
 	}
 
-	_, err = h.repo.StageRequest.ResolveOrRejectRequest(id, user.ID, 5)
+	err = h.repo.StageRequest.ResolveOrRejectRequest(id, user.ID, 5)
 	if err != nil {
 		logrus.Error(err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -508,4 +512,30 @@ func (h *StageRequestHandler) DeleteStageRequest(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Stage request deleted successfully"})
+}
+
+// @Summary      Asynchronously update emission calculation result
+// @Description  Update the emission calculation result for a stage request (called by external calculation service)
+// @Tags         stage-requests
+// @Accept       json
+// @Produce      json
+// @Param        request body AsyncUpdateEmissionCalculationResponse true "Emission calculation result data"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /stage-requests/asyncUpdateCalculation
+func (h *StageRequestHandler) AsyncUpdateEmissionCalculation(ctx *gin.Context) {
+	var req AsyncUpdateEmissionCalculationResponse
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stage request data"})
+		return
+	}
+
+	if err := h.repo.StageRequest.UpdateEmissionCalculationResult(req.ID, req.CalculationResult); err != nil {
+		logrus.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update emission calculation result"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Emission calculation result updated successfully"})
 }
