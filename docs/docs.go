@@ -206,6 +206,55 @@ const docTemplate = `{
                 }
             }
         },
+        "/stage-requests/asyncUpdateCalculation": {
+            "put": {
+                "description": "Update the emission calculation result for a stage request (called by external calculation service)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "stage-requests"
+                ],
+                "summary": "Asynchronously update emission calculation result",
+                "parameters": [
+                    {
+                        "description": "Emission calculation result data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.AsyncUpdateEmissionCalculationResponse"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/stage-requests/stageRequestInfo": {
             "get": {
                 "security": [
@@ -1154,6 +1203,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "handler.AsyncUpdateEmissionCalculationResponse": {
+            "type": "object",
+            "properties": {
+                "calculation_result": {
+                    "type": "number"
+                },
+                "request_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "handler.CreateStageRequest": {
             "type": "object",
             "required": [
@@ -1298,10 +1358,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "input_field_1": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "input_field_2": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "second_dimension_const": {
                     "type": "number"
@@ -1389,6 +1449,9 @@ const docTemplate = `{
                 },
                 "userID": {
                     "type": "integer"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         },

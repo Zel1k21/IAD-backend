@@ -48,14 +48,15 @@ func (r *StageRequestRepository) GetDraftRequestInfo(userID uint64) (uint64, int
 	return request.ID, int(count), nil
 }
 
-func (r *StageRequestRepository) GetStageRequests(userID uint64, isModerator bool, statusFilter uint8, dateFrom, dateTo *time.Time) ([]ds.StageRequest, error) {
+func (r *StageRequestRepository) GetStageRequests(userID uint64, isModerator bool, statusFilter uint8, dateFrom, dateTo string) ([]ds.StageRequest, []string, error) {
 	var requests []ds.StageRequest
+	var usernames []string
 
 	query := r.db.
 		Preload("User", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username")
 		}).
-		Preload("Morderator", func(db *gorm.DB) *gorm.DB {
+		Preload("Moderator", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username")
 		}).
 		Where("status > 2").Order("status ASC")
@@ -68,19 +69,23 @@ func (r *StageRequestRepository) GetStageRequests(userID uint64, isModerator boo
 		query = query.Where("status = ?", statusFilter)
 	}
 
-	if dateFrom != nil {
-		query = query.Where("formed_at >= ?", dateFrom)
+	if dateFrom != "" {
+		query = query.Where("created_at >= ?", dateFrom)
 	}
-	if dateTo != nil {
-		query = query.Where("formed_at <= ?", dateTo)
+	if dateTo != "" {
+		query = query.Where("created_at <= ?", dateTo)
 	}
 
 	err := query.Find(&requests).Error
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return requests, nil
+	for _, request := range requests {
+		usernames = append(usernames, request.User.Username)
+	}
+
+	return requests, usernames, nil
 }
 
 func (r *StageRequestRepository) GetStageRequestByID(id uint64, userID uint64, isModerator bool) (*ds.StageRequest, error) {

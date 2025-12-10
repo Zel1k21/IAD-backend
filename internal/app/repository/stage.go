@@ -123,7 +123,7 @@ func (r *StageRepository) AddStageToDraftRequest(stageID uint64, userID uint64) 
 			request = ds.StageRequest{
 				Status:    1,
 				UserID:    userID,
-				CreatedAt: time.Now(),
+				CreatedAt: time.Now().String(),
 			}
 			if err := tx.Create(&request).Error; err != nil {
 				return err

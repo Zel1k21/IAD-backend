@@ -19,15 +19,16 @@ type StageRequestHandler struct {
 }
 
 type StagesRequestsFilterResponse struct {
-	ID                uint64    `json:"id"`
-	Status            uint8     `json:"status"`
-	UserID            uint64    `json:"userID"`
-	ModeratorID       uint64    `json:"moderatorID"`
-	CreatedAt         time.Time `json:"createdAt"`
-	FormedAt          time.Time `json:"formedAt"`
-	ClosedAt          time.Time `json:"closedAt"`
-	ProductName       string    `json:"productName"`
-	CalculationResult float64   `json:"calculationResult"`
+	ID                uint64  `json:"id"`
+	Status            uint8   `json:"status"`
+	UserID            uint64  `json:"userID"`
+	Username          string  `json:"username"`
+	ModeratorID       uint64  `json:"moderatorID"`
+	CreatedAt         string  `json:"createdAt"`
+	FormedAt          string  `json:"formedAt"`
+	ClosedAt          string  `json:"closedAt"`
+	ProductName       string  `json:"productName"`
+	CalculationResult float64 `json:"calculationResult"`
 }
 
 type StageRequestResponse struct {
@@ -44,7 +45,7 @@ type StageRequestResponse struct {
 
 type StageRequestDetailResponse struct {
 	ID                   uint64                              `json:"id"`
-	CreatedAt            time.Time                           `json:"created_at"`
+	CreatedAt            string                              `json:"created_at"`
 	ProductName          string                              `json:"product_name"`
 	StageRequestToStages []StageRequestToStageDetailResponse `json:"stage_request_to_stages"`
 	CalculationResult    float64                             `json:"calculationResult"`
@@ -184,19 +185,20 @@ func (h *StageRequestHandler) GetStageRequests(ctx *gin.Context) {
 		}
 	}
 
-	var dateFrom, dateTo *time.Time
-	if dateFromStr := ctx.Query("date_from"); dateFromStr != "" {
-		if parsed, err := time.Parse("2006-01-02", dateFromStr); err == nil {
-			dateFrom = &parsed
-		}
-	}
-	if dateToStr := ctx.Query("date_to"); dateToStr != "" {
-		if parsed, err := time.Parse("2006-01-02", dateToStr); err == nil {
-			dateTo = &parsed
-		}
-	}
+	var dateFrom = ctx.Query("date_from")
+	var dateTo = ctx.Query("date_to")
+	// if dateFromStr := ctx.Query("date_from"); dateFromStr != "" {
+	// 	if parsed, err := time.Parse("2006-01-02", dateFromStr); err == nil {
+	// 		dateFrom = &parsed
+	// 	}
+	// }
+	// if dateToStr := ctx.Query("date_to"); dateToStr != "" {
+	// 	if parsed, err := time.Parse("2006-01-02", dateToStr); err == nil {
+	// 		dateTo = &parsed
+	// 	}
+	// }
 
-	requests, err := h.repo.StageRequest.GetStageRequests(user.ID, isModerator, statusFilter, dateFrom, dateTo)
+	requests, usernames, err := h.repo.StageRequest.GetStageRequests(user.ID, isModerator, statusFilter, dateFrom, dateTo)
 	if err != nil {
 		logrus.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get stage requests"})
@@ -204,11 +206,12 @@ func (h *StageRequestHandler) GetStageRequests(ctx *gin.Context) {
 	}
 
 	var response []StagesRequestsFilterResponse
-	for _, stageRequest := range requests {
+	for i, stageRequest := range requests {
 		response = append(response, StagesRequestsFilterResponse{
 			ID:                stageRequest.ID,
 			Status:            stageRequest.Status,
 			UserID:            stageRequest.UserID,
+			Username:          usernames[i],
 			ModeratorID:       stageRequest.ModeratorID,
 			CreatedAt:         stageRequest.CreatedAt,
 			FormedAt:          stageRequest.FormedAt,
@@ -523,7 +526,7 @@ func (h *StageRequestHandler) DeleteStageRequest(ctx *gin.Context) {
 // @Success      200  {object}  map[string]interface{}
 // @Failure      400  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
-// @Router       /stage-requests/asyncUpdateCalculation
+// @Router       /stage-requests/asyncUpdateCalculation [put]
 func (h *StageRequestHandler) AsyncUpdateEmissionCalculation(ctx *gin.Context) {
 	var req AsyncUpdateEmissionCalculationResponse
 	if err := ctx.ShouldBindJSON(&req); err != nil {

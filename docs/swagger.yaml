@@ -1,5 +1,12 @@
 basePath: /api
 definitions:
+  handler.AsyncUpdateEmissionCalculationResponse:
+    properties:
+      calculation_result:
+        type: number
+      request_id:
+        type: integer
+    type: object
   handler.CreateStageRequest:
     properties:
       description:
@@ -96,9 +103,9 @@ definitions:
       image_url:
         type: string
       input_field_1:
-        type: integer
+        type: number
       input_field_2:
-        type: integer
+        type: number
       second_dimension_const:
         type: number
       second_dimension_name:
@@ -156,6 +163,8 @@ definitions:
         type: integer
       userID:
         type: integer
+      username:
+        type: string
     type: object
   handler.UpdateProfileRequest:
     properties:
@@ -526,6 +535,40 @@ paths:
       security:
       - BearerAuth: []
       summary: Resolve stage request
+      tags:
+      - stage-requests
+  /stage-requests/asyncUpdateCalculation:
+    put:
+      consumes:
+      - application/json
+      description: Update the emission calculation result for a stage request (called
+        by external calculation service)
+      parameters:
+      - description: Emission calculation result data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.AsyncUpdateEmissionCalculationResponse'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Asynchronously update emission calculation result
       tags:
       - stage-requests
   /stage-requests/stageRequestInfo:
