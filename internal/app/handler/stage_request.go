@@ -95,7 +95,7 @@ func (h *StageRequestHandler) GetStageRequestInfo(ctx *gin.Context) {
 	jwtStr := ctx.GetHeader("Authorization")
 	const jwtPrefix = "Bearer "
 
-	var userUUID = "Bearer "
+	var userUUID = ""
 
 	if strings.HasPrefix(jwtStr, jwtPrefix) {
 		jwtStr = jwtStr[len(jwtPrefix):]

@@ -7,7 +7,7 @@ import (
 )
 
 func RegisterHandlers(router *gin.Engine, repo *repository.Repository) {
-	apiRouter := router.Group("/api")
+	apiRouter := router.Group("/api", SetCorsHeaders)
 
 	userHandler := NewUserHandler(repo)
 
@@ -15,8 +15,11 @@ func RegisterHandlers(router *gin.Engine, repo *repository.Repository) {
 	publicRouter := apiRouter.Group("")
 	{
 		publicRouter.POST("/users/register", userHandler.Register)
+		publicRouter.OPTIONS("/users/register", SetCorsHeaders)
 		publicRouter.POST("/users/login", userHandler.Login)
+		publicRouter.OPTIONS("/users/login", SetCorsHeaders)
 		publicRouter.POST("/users/refresh", userHandler.RefreshToken)
+		publicRouter.OPTIONS("/users/refresh", SetCorsHeaders)
 
 		// Public stage routes
 		stageHandler := NewStageHandler(repo)
@@ -25,7 +28,22 @@ func RegisterHandlers(router *gin.Engine, repo *repository.Repository) {
 
 		requestHandler := NewStageRequestHandler(repo)
 		publicRouter.GET("/stage-requests/stageRequestInfo", requestHandler.GetStageRequestInfo)
+		publicRouter.OPTIONS("/stage-requests/stageRequestInfo", SetCorsHeaders)
 		publicRouter.PUT("/stage-requests/asyncUpdateCalculation", requestHandler.AsyncUpdateEmissionCalculation)
+		publicRouter.OPTIONS("/stage-requests/asyncUpdateCalculation", SetCorsHeaders)
+
+		publicRouter.OPTIONS("/users/profile", SetCorsHeaders)
+		publicRouter.OPTIONS("/users/logout", SetCorsHeaders)
+		publicRouter.OPTIONS("/stages", SetCorsHeaders)
+		publicRouter.OPTIONS("/stages/:id", SetCorsHeaders)
+		publicRouter.OPTIONS("/stages/:id/image", SetCorsHeaders)
+		publicRouter.OPTIONS("/stages/:id/add-to-request", SetCorsHeaders)
+		publicRouter.OPTIONS("/stage-requests", SetCorsHeaders)
+		publicRouter.OPTIONS("/stage-requests/:id", SetCorsHeaders)
+		publicRouter.OPTIONS("/stage-requests/:id/form", SetCorsHeaders)
+		publicRouter.OPTIONS("/stage-requests/:id/resolve", SetCorsHeaders)
+		publicRouter.OPTIONS("/stage-requests/:id/reject", SetCorsHeaders)
+		publicRouter.OPTIONS("/stage-request-stages/:requestId/stages/:stageId", SetCorsHeaders)
 	}
 
 	protectedRouter := apiRouter.Group("")

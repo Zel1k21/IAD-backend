@@ -70,10 +70,10 @@ func (r *StageRequestRepository) GetStageRequests(userID uint64, isModerator boo
 	}
 
 	if dateFrom != "" {
-		query = query.Where("created_at >= ?", dateFrom)
+		query = query.Where("created_at >= ? or formed_at >= ? or closed_at >= ?", dateFrom, dateFrom, dateFrom)
 	}
 	if dateTo != "" {
-		query = query.Where("created_at <= ?", dateTo)
+		query = query.Where("created_at <= ? or formed_at <= ? or closed_at <= ?", dateTo, dateTo, dateTo)
 	}
 
 	err := query.Find(&requests).Error
